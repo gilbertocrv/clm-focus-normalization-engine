@@ -1,61 +1,86 @@
-# ☁️ Multicloud Billing Normalization Engine (MVP)
 
-Sistema de **normalização de dados de faturamento multicloud**, com suporte a AWS, GCP, Azure e OCI.
 
-O objetivo é transformar dados financeiros heterogêneos em um **schema comum auditável**, preservando os dados nativos e permitindo análise consistente.
+# ☁️ Multicloud Billing Normalization Engine (CLM + FOCUS)
 
-Este projeto é um **MVP de normalização**, não um framework e não um sistema de decisão.
+![License](https://img.shields.io/badge/license-MIT-green)
+![Node.js](https://img.shields.io/badge/node.js-v18+-blue)
+![Focus](https://img.shields.io/badge/FOCUS-Aligned-orange)
+
+Sistema de **normalização de dados de faturamento multicloud**, com suporte a **AWS, GCP, Azure e OCI**.
+
+O objetivo é transformar dados financeiros heterogêneos em um **schema comum auditável**, preservando os dados nativos e permitindo análise consistente entre provedores.
+
+> Este projeto é um **MVP de normalização de dados**.
+> Não é um framework, nem um sistema de decisão.
 
 ---
 
 ## 📌 Problema
 
-Ambientes multicloud apresentam:
+Ambientes multicloud apresentam inconsistências estruturais relevantes:
 
 * Estruturas de billing distintas entre provedores
-* Nomenclaturas inconsistentes
-* Diferenças de granularidade
-* Falta de padronização para análise comparativa
-* Dificuldade de auditoria e rastreabilidade
+* Nomenclaturas incompatíveis entre serviços equivalentes
+* Diferenças de granularidade e agregação
+* Formatos divergentes de data, moeda e unidade
+* Perda de rastreabilidade durante transformações
+
+Resultado: **análise inconsistente e baixa confiabilidade para governança financeira**.
 
 ---
 
 ## 💡 Proposta
 
-Este projeto implementa uma camada de normalização determinística baseada em:
+Implementar uma camada de normalização determinística com foco em auditabilidade:
 
-* Mapeamento explícito (`config/mapping.json`)
-* Schema comum padronizado
-* Preservação completa dos dados originais (`_native`)
-* Classificação por categoria de serviço
-* Estrutura preparada para integração com APIs reais
+* **Mapeamento explícito (`config/mapping.json`)**
+* **Schema comum padronizado**
+* **Preservação integral do dado original (`_native`)**
+* **Classificação funcional por categoria**
+* **Base preparada para integração com pricing real**
+
+> O sistema não toma decisão — ele **estrutura o dado para que decisões sejam confiáveis**.
 
 ---
 
 ## 🏗️ Arquitetura
 
 ```text
-backend/        API de normalização e análise
-frontend/       Dashboard de visualização
-config/         Mapeamentos e regras
-data/samples/   Dados de exemplo por provedor
-docs/           Documentação técnica
+Fatura nativa (CUR / Billing Export / Cost Export / Usage Report)
+        ↓
+Ingestão CSV
+        ↓
+De/Para (config/mapping.json)
+        ↓
+Schema Normalizado
+        ↓
+Classificação + Arbitragem (config/pricing.json)
+        ↓
+API + Dashboard
+```
+
+### Estrutura do projeto
+
+```text
+backend/        API Express (processamento e normalização)
+frontend/       Dashboard (visualização e exportação)
+config/         Regras de mapeamento e pricing
+data/samples/   CSVs de exemplo por provedor
+docs/           Documentação técnica (INTEGRATION.md)
 ```
 
 ---
 
-## 🔗 Provedores Suportados e Documentação Oficial
+## 🔗 Provedores Suportados e Referências Oficiais
 
-A implementação segue os modelos oficiais de exportação e billing de cada provedor.
+A modelagem segue os padrões oficiais de billing de cada cloud:
 
 ### ☁️ AWS
 
-* Billing Export (CUR):
+* CUR (Cost and Usage Report):
   [https://docs.aws.amazon.com/cur/latest/userguide/what-is-cur.html](https://docs.aws.amazon.com/cur/latest/userguide/what-is-cur.html)
 * Price List API:
   [https://docs.aws.amazon.com/awsaccountbilling/latest/aboutv2/price-list-api.html](https://docs.aws.amazon.com/awsaccountbilling/latest/aboutv2/price-list-api.html)
-
----
 
 ### ☁️ GCP
 
@@ -64,8 +89,6 @@ A implementação segue os modelos oficiais de exportação e billing de cada pr
 * Billing Catalog API:
   [https://cloud.google.com/billing/v1/how-tos/catalog-api](https://cloud.google.com/billing/v1/how-tos/catalog-api)
 
----
-
 ### ☁️ Microsoft Azure
 
 * Cost Management Export:
@@ -73,26 +96,25 @@ A implementação segue os modelos oficiais de exportação e billing de cada pr
 * Retail Prices API:
   [https://learn.microsoft.com/en-us/rest/api/cost-management/retail-prices](https://learn.microsoft.com/en-us/rest/api/cost-management/retail-prices)
 
----
-
 ### ☁️ Oracle Cloud (OCI)
 
 * Usage Reports:
   [https://docs.oracle.com/en-us/iaas/Content/Billing/Concepts/usagereports.htm](https://docs.oracle.com/en-us/iaas/Content/Billing/Concepts/usagereports.htm)
-* Billing / Usage API:
+* Usage API:
   [https://docs.oracle.com/en-us/iaas/api/#/en/usage/20190111/](https://docs.oracle.com/en-us/iaas/api/#/en/usage/20190111/)
 
 ---
 
 ## 📊 Schema Normalizado
 
-| Campo          | Descrição                 |
-| -------------- | ------------------------- |
-| `resource_id`  | Identificador do recurso  |
-| `service_name` | Nome do serviço           |
-| `region`       | Região                    |
-| `billed_cost`  | Custo faturado            |
-| `_native`      | Dados originais completos |
+| Campo          | Descrição                             |
+| -------------- | ------------------------------------- |
+| `resource_id`  | Identificador único do recurso        |
+| `service_name` | Nome do serviço                       |
+| `region`       | Região                                |
+| `billed_cost`  | Custo faturado                        |
+| `provider`     | Provedor de origem                    |
+| `_native`      | Dados originais completos (imutáveis) |
 
 ---
 
@@ -100,10 +122,10 @@ A implementação segue os modelos oficiais de exportação e billing de cada pr
 
 ### `config/mapping.json`
 
-Define o mapeamento entre campos nativos e o schema comum.
+Define o de/para entre campos nativos e o schema comum.
 
-* Estrutura extensível por provedor
-* Permite inclusão de novos providers sem alteração de código
+* Extensível por provedor
+* Permite adicionar novos providers sem alterar código
 
 ---
 
@@ -111,7 +133,9 @@ Define o mapeamento entre campos nativos e o schema comum.
 
 Define fatores de arbitragem por categoria.
 
-> Preparado para futura substituição por integrações com APIs reais de pricing.
+> ⚠️ Os fatores atuais são simulados
+> Não devem ser utilizados para decisão real
+> Estrutura preparada para integração com APIs oficiais
 
 ---
 
@@ -130,11 +154,17 @@ npm install
 node server.js
 ```
 
+Servidor:
+
+```
+http://localhost:3000
+```
+
 ### Frontend
 
-Abrir:
+Abrir no navegador:
 
-```text
+```
 frontend/index.html
 ```
 
@@ -144,7 +174,7 @@ frontend/index.html
 
 O diretório `data/samples/` contém:
 
-* CSVs reais simulados por provedor
+* CSVs simulando exportações reais de cada cloud
 * Estrutura de colunas nativas
 * Base para testes e demonstração
 
@@ -152,42 +182,63 @@ O diretório `data/samples/` contém:
 
 ## 📚 Documentação Técnica
 
-A documentação completa está em:
+Arquivo:
 
-```text
+```
 docs/INTEGRATION.md
 ```
 
 Inclui:
 
-* contratos de API
-* estrutura de dados
-* exemplos de ingestão
-* regras de mapeamento
-* visão de evolução
+* Endpoints da API
+* Contratos de entrada/saída
+* Queries de extração (Athena / BigQuery / Azure / OCI)
+* Estrutura de mapeamento
+* Diretrizes de expansão
 
 ---
 
 ## ⚠️ Escopo
 
-Este projeto é um **MVP de normalização de dados**.
+Este projeto:
 
-Não inclui:
+✔ Normaliza dados
+✔ Preserva rastreabilidade
+✔ Permite comparação consistente
 
-* automação de decisão
-* otimização automática de custos
-* integração nativa com APIs em tempo real
-* camada de governança avançada
+Este projeto **não**:
+
+✘ Toma decisão automática
+✘ Substitui ferramentas FinOps
+✘ Integra pricing em tempo real
+✘ Implementa governança organizacional
 
 ---
 
-## 🧭 Evolução Prevista
+## 🧭 Evolução e Limitações
 
-* Integração com APIs reais de billing e pricing
-* Streaming de dados
-* Versionamento de schema
-* Validação e governança de dados
-* Análise contextual de custos
+### Limitações atuais
+
+* Parsing incorreto para formatos numéricos locais (ex: `pt-BR`)
+* Fatores de arbitragem não baseados em pricing real
+* `resource_id` pode ser gerado artificialmente (impacto em auditoria)
+* CORS aberto sem restrição
+* Upload sem limite de tamanho (risco operacional)
+* Configuração carregada apenas no startup
+* Exposição de mensagens de erro internas
+* Ausência de testes automatizados
+* README sem exemplo explícito input → output (pendente evolução)
+
+---
+
+### Próximos passos
+
+* Integração com APIs reais de pricing
+* Validação de schema e consistência
+* Testes automatizados por provedor
+* Limites e hardening de segurança
+* Versionamento de mapping
+* Pipeline de ingestão contínua
 
 ---
 
@@ -199,7 +250,7 @@ MIT
 
 ## 👤 Autor
 
-Gilberto Gonçalves dos Santos Filho
+**Gilberto Gonçalves dos Santos Filho**
 
 Foco em:
 
