@@ -1,0 +1,13 @@
+line_item_resource_id,product_product_name,product_region,line_item_unblended_cost,line_item_usage_type,resource_tags,bill_billing_period_start_date,bill_billing_period_end_date
+i-0a1b2c3d4e5f,Amazon EC2,us-east-1,4200.00,BoxUsage:m5.2xlarge,env:prod|team:backend,2024-03-01 00:00:00,2024-03-31 23:59:59
+i-0b2c3d4e5f6a,Amazon EC2,us-west-2,1850.00,BoxUsage:t3.large,env:staging|team:frontend,2024-03-01 00:00:00,2024-03-31 23:59:59
+rds-prod-postgres-01,Amazon RDS,us-east-1,2800.00,InstanceUsage:db.r5.large,env:prod|team:data,2024-03-01 00:00:00,2024-03-31 23:59:59
+rds-analytics-mysql,Amazon RDS,us-east-1,1200.00,InstanceUsage:db.t3.medium,env:prod|team:analytics,2024-03-01 00:00:00,2024-03-31 23:59:59
+arn:aws:s3:::prod-media-bucket,Amazon S3,us-east-1,340.00,TimedStorage-ByteHrs,env:prod|team:media,2024-03-01 00:00:00,2024-03-31 23:59:59
+arn:aws:s3:::backup-cold-storage,Amazon S3,us-east-1,120.00,GlacierStorage-ByteHrs,env:prod|team:ops,2024-03-01 00:00:00,2024-03-31 23:59:59
+arn:aws:lambda:us-east-1:123456789:function:payments-processor,AWS Lambda,us-east-1,320.00,Lambda-GB-Second,env:prod|team:payments,2024-03-01 00:00:00,2024-03-31 23:59:59
+arn:aws:lambda:us-east-1:123456789:function:email-sender,AWS Lambda,us-east-1,95.00,Lambda-GB-Second,env:prod|team:notifications,2024-03-01 00:00:00,2024-03-31 23:59:59
+eks-prod-cluster-01,Amazon EKS,us-west-2,4500.00,Kubernetes:Node,env:prod|team:platform,2024-03-01 00:00:00,2024-03-31 23:59:59
+arn:aws:redshift:us-east-1:123456789:cluster:analytics-dw,Amazon Redshift,us-east-1,2600.00,HeavyUsage:dc2.8xlarge,env:prod|team:data,2024-03-01 00:00:00,2024-03-31 23:59:59
+nat-0a1b2c3d4,Amazon VPC,us-east-1,580.00,NatGateway-Hours,env:prod|team:platform,2024-03-01 00:00:00,2024-03-31 23:59:59
+elb-prod-api,Elastic Load Balancing,us-east-1,210.00,LoadBalancerUsage,env:prod|team:backend,2024-03-01 00:00:00,2024-03-31 23:59:59

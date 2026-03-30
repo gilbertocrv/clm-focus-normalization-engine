@@ -1,0 +1,11 @@
+resource.name,service.description,location.region,cost,sku.description,labels,usage_start_time,usage_end_time
+//compute.googleapis.com/projects/prod-project/zones/us-central1-a/instances/api-server-01,Compute Engine,us-central1,3890.50,N2 Instance Core running,env:prod|team:backend,2024-03-01T00:00:00Z,2024-03-31T23:59:59Z
+//compute.googleapis.com/projects/prod-project/zones/us-central1-b/instances/worker-01,Compute Engine,us-central1,1200.00,E2 Instance Core running,env:prod|team:workers,2024-03-01T00:00:00Z,2024-03-31T23:59:59Z
+//storage.googleapis.com/projects/prod-project/buckets/media-prod,Cloud Storage,us-central1,650.00,Standard Storage,env:prod|team:media,2024-03-01T00:00:00Z,2024-03-31T23:59:59Z
+//storage.googleapis.com/projects/prod-project/buckets/backups,Cloud Storage,us-central1,180.00,Nearline Storage,env:prod|team:ops,2024-03-01T00:00:00Z,2024-03-31T23:59:59Z
+//bigquery.googleapis.com/projects/prod-project/datasets/analytics,BigQuery,us-central1,1400.00,Analysis queries,env:prod|team:analytics,2024-03-01T00:00:00Z,2024-03-31T23:59:59Z
+//run.googleapis.com/projects/prod-project/locations/us-central1/services/api-gateway,Cloud Run,us-central1,480.00,Cloud Run requests,env:prod|team:backend,2024-03-01T00:00:00Z,2024-03-31T23:59:59Z
+//container.googleapis.com/projects/prod-project/zones/us-central1-a/clusters/gke-prod,Kubernetes Engine,us-central1,2100.00,Autopilot pod compute,env:prod|team:platform,2024-03-01T00:00:00Z,2024-03-31T23:59:59Z
+//aiplatform.googleapis.com/projects/prod-project,Vertex AI,us-central1,7200.00,Custom training node hours,env:prod|team:ml,2024-03-01T00:00:00Z,2024-03-31T23:59:59Z
+//sql.googleapis.com/projects/prod-project/instances/postgres-prod,Cloud SQL,us-central1,1650.00,Cloud SQL db-n1-standard-4,env:prod|team:data,2024-03-01T00:00:00Z,2024-03-31T23:59:59Z
+//cloudfunctions.googleapis.com/projects/prod-project/locations/us-central1/functions/notifications,Cloud Functions,us-central1,95.00,Cloud Functions invocations,env:prod|team:notifications,2024-03-01T00:00:00Z,2024-03-31T23:59:59Z

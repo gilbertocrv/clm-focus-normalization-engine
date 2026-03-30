@@ -1,0 +1,10 @@
+resourceId,service,region,cost,skuName,tags,timeIntervalStart,timeIntervalEnd
+ocid1.instance.oc1.iad.prod-api-01,Compute,us-ashburn-1,2100.00,VM.Standard.E4.Flex,env:prod|team:backend,2024-03-01T00:00:00Z,2024-03-31T23:59:59Z
+ocid1.instance.oc1.iad.prod-worker-01,Compute,us-ashburn-1,980.00,VM.Standard.E3.Flex,env:prod|team:workers,2024-03-01T00:00:00Z,2024-03-31T23:59:59Z
+ocid1.dbsystem.oc1.iad.prod-db-01,Database,us-ashburn-1,1800.00,MySQL Database Service,env:prod|team:data,2024-03-01T00:00:00Z,2024-03-31T23:59:59Z
+ocid1.autonomousdatabase.oc1.iad.analytics,Database,us-ashburn-1,2400.00,Autonomous Data Warehouse,env:prod|team:analytics,2024-03-01T00:00:00Z,2024-03-31T23:59:59Z
+ocid1.bucket.oc1.iad.prod-media,Object Storage,us-ashburn-1,320.00,Object Storage,env:prod|team:media,2024-03-01T00:00:00Z,2024-03-31T23:59:59Z
+ocid1.cluster.oc1.iad.oke-prod,Container Engine,us-ashburn-1,1600.00,Container Engine for Kubernetes,env:prod|team:platform,2024-03-01T00:00:00Z,2024-03-31T23:59:59Z
+ocid1.fnapp.oc1.iad.payments,Functions,us-ashburn-1,140.00,Functions Invocations,env:prod|team:payments,2024-03-01T00:00:00Z,2024-03-31T23:59:59Z
+ocid1.loadbalancer.oc1.iad.prod-lb,Networking,us-ashburn-1,190.00,Load Balancer,env:prod|team:platform,2024-03-01T00:00:00Z,2024-03-31T23:59:59Z
+ocid1.datascienceproject.oc1.iad.ml-prod,Data Science,us-ashburn-1,3100.00,Data Science Notebook Session,env:prod|team:ml,2024-03-01T00:00:00Z,2024-03-31T23:59:59Z
