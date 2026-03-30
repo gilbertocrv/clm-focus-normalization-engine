@@ -1,132 +1,98 @@
+# ☁️ Multicloud Billing Normalization Engine (MVP)
 
----
+Sistema de **normalização de dados de faturamento multicloud**, com suporte a AWS, GCP, Azure e OCI.
 
-# ☁️ Multicloud Billing Normalizer (CLM + FOCUS)
+O objetivo é transformar dados financeiros heterogêneos em um **schema comum auditável**, preservando os dados nativos e permitindo análise consistente.
 
-![License](https://img.shields.io/badge/license-MIT-green)
-![Node.js](https://img.shields.io/badge/node.js-v18+-blue)
-![FinOps](https://img.shields.io/badge/Focus-Aligned-orange)
-
-Sistema para **normalização e padronização de dados de faturamento multicloud**, com suporte a **AWS, GCP, Azure e OCI**.
-
-O objetivo é estruturar dados financeiros provenientes de diferentes provedores em um **schema comum auditável**, preservando a integridade dos dados originais e permitindo análises consistentes de custo e eficiência.
+Este projeto é um **MVP de normalização**, não um framework e não um sistema de decisão.
 
 ---
 
 ## 📌 Problema
 
-Ambientes multicloud expõem dados de billing de forma heterogênea:
+Ambientes multicloud apresentam:
 
-* Estruturas de dados distintas (JSON vs CSV)
-* Nomenclaturas inconsistentes entre provedores
-* Diferenças de unidade, moeda e granularidade
-* Baixa rastreabilidade durante processos de transformação
-* Dificuldade de auditoria e reconciliação financeira
+* Estruturas de billing distintas entre provedores
+* Nomenclaturas inconsistentes
+* Diferenças de granularidade
+* Falta de padronização para análise comparativa
+* Dificuldade de auditoria e rastreabilidade
 
 ---
 
-## 💡 Solução
+## 💡 Proposta
 
-Este projeto implementa uma camada de normalização orientada a governança:
+Este projeto implementa uma camada de normalização determinística baseada em:
 
-* **Ingestão baseada em exportações reais**
-
-  * AWS (CUR)
-  * GCP (BigQuery Billing Export)
-  * Azure (Cost Management)
-  * OCI (Usage Reports)
-
-* **Mapeamento determinístico**
-
-  * Tradução via `config/mapping.json`
-  * Separação entre lógica e código
-
-* **Schema comum padronizado**
-
-  * Estrutura unificada para análise
-
-* **Preservação de dados nativos**
-
-  * Campo `_native` mantém o dado original intacto
-  * Permite auditoria e reconciliação
-
-* **Arbitragem de custo**
-
-  * Classificação por categoria (Compute, Storage, Networking, etc.)
-  * Base para análises comparativas de eficiência
+* Mapeamento explícito (`config/mapping.json`)
+* Schema comum padronizado
+* Preservação completa dos dados originais (`_native`)
+* Classificação por categoria de serviço
+* Estrutura preparada para integração com APIs reais
 
 ---
 
 ## 🏗️ Arquitetura
 
-```
-backend/        → API de normalização e análise
-frontend/       → Dashboard de visualização
-config/         → Regras de mapeamento e arbitragem
-data/samples/   → Exemplos de dados por provedor
-docs/           → Documentação técnica e integração
+```text
+backend/        API de normalização e análise
+frontend/       Dashboard de visualização
+config/         Mapeamentos e regras
+data/samples/   Dados de exemplo por provedor
+docs/           Documentação técnica
 ```
 
 ---
 
-## 📊 Schema Comum (Normalizado)
+## 🔗 Provedores Suportados e Documentação Oficial
 
-| Campo          | Descrição                            |
-| -------------- | ------------------------------------ |
-| `resource_id`  | Identificador do recurso no provedor |
-| `service_name` | Nome do serviço                      |
-| `region`       | Região/zone do recurso               |
-| `billed_cost`  | Custo faturado                       |
-| `_native`      | Dados originais completos da fatura  |
+A implementação segue os modelos oficiais de exportação e billing de cada provedor.
 
----
+### ☁️ AWS
 
-## 🔗 Fontes Oficiais
-
-* **AWS**
-  Cost and Usage Report (CUR)
-  [https://docs.aws.amazon.com/cur/latest/userguide/data-dictionary.html](https://docs.aws.amazon.com/cur/latest/userguide/data-dictionary.html)
-
-* **GCP**
-  BigQuery Billing Export
-  [https://cloud.google.com/billing/docs/how-to/export-data-bigquery-schema](https://cloud.google.com/billing/docs/how-to/export-data-bigquery-schema)
-
-* **Azure**
-  Cost Management Export
-  [https://learn.microsoft.com/en-us/azure/cost-management-billing/automate/understand-usage-details-fields](https://learn.microsoft.com/en-us/azure/cost-management-billing/automate/understand-usage-details-fields)
-
-* **OCI**
-  Usage Reports
-  [https://docs.oracle.com/en-us/iaas/Content/Billing/Concepts/usagereportsoverview.htm](https://docs.oracle.com/en-us/iaas/Content/Billing/Concepts/usagereportsoverview.htm)
+* Billing Export (CUR):
+  [https://docs.aws.amazon.com/cur/latest/userguide/what-is-cur.html](https://docs.aws.amazon.com/cur/latest/userguide/what-is-cur.html)
+* Price List API:
+  [https://docs.aws.amazon.com/awsaccountbilling/latest/aboutv2/price-list-api.html](https://docs.aws.amazon.com/awsaccountbilling/latest/aboutv2/price-list-api.html)
 
 ---
 
-## 🚀 Como Executar
+### ☁️ GCP
 
-### 1. Clonar o repositório
+* Billing Export (BigQuery):
+  [https://cloud.google.com/billing/docs/how-to/export-data-bigquery](https://cloud.google.com/billing/docs/how-to/export-data-bigquery)
+* Billing Catalog API:
+  [https://cloud.google.com/billing/v1/how-tos/catalog-api](https://cloud.google.com/billing/v1/how-tos/catalog-api)
 
-```bash
-git clone https://github.com/gilbertocrv/clm-focus-normalization-engine.git
-cd clm-focus-normalization-engine
-```
+---
 
-### 2. Backend
+### ☁️ Microsoft Azure
 
-```bash
-cd backend
-npm install
-node server.js
-```
+* Cost Management Export:
+  [https://learn.microsoft.com/en-us/azure/cost-management-billing/costs/tutorial-export-acm-data](https://learn.microsoft.com/en-us/azure/cost-management-billing/costs/tutorial-export-acm-data)
+* Retail Prices API:
+  [https://learn.microsoft.com/en-us/rest/api/cost-management/retail-prices](https://learn.microsoft.com/en-us/rest/api/cost-management/retail-prices)
 
-### 3. Frontend
+---
 
-Abra o arquivo:
+### ☁️ Oracle Cloud (OCI)
 
-```
-frontend/index.html
-```
+* Usage Reports:
+  [https://docs.oracle.com/en-us/iaas/Content/Billing/Concepts/usagereports.htm](https://docs.oracle.com/en-us/iaas/Content/Billing/Concepts/usagereports.htm)
+* Billing / Usage API:
+  [https://docs.oracle.com/en-us/iaas/api/#/en/usage/20190111/](https://docs.oracle.com/en-us/iaas/api/#/en/usage/20190111/)
 
-ou utilize o servidor local (se configurado).
+---
+
+## 📊 Schema Normalizado
+
+| Campo          | Descrição                 |
+| -------------- | ------------------------- |
+| `resource_id`  | Identificador do recurso  |
+| `service_name` | Nome do serviço           |
+| `region`       | Região                    |
+| `billed_cost`  | Custo faturado            |
+| `_native`      | Dados originais completos |
 
 ---
 
@@ -134,79 +100,111 @@ ou utilize o servidor local (se configurado).
 
 ### `config/mapping.json`
 
-* Define o mapeamento entre campos nativos e o schema comum
-* Permite adicionar novos provedores sem alterar código
+Define o mapeamento entre campos nativos e o schema comum.
+
+* Estrutura extensível por provedor
+* Permite inclusão de novos providers sem alteração de código
+
+---
 
 ### `config/pricing.json`
 
-* Define fatores de arbitragem por categoria
-* Estrutura pronta para integração futura com APIs reais de pricing
+Define fatores de arbitragem por categoria.
+
+> Preparado para futura substituição por integrações com APIs reais de pricing.
 
 ---
 
-## 📁 Estrutura de Dados
+## 🚀 Execução
 
-* `data/samples/`
+```bash
+git clone https://github.com/gilbertocrv/clm-focus-normalization-engine.git
+cd clm-focus-normalization-engine
+```
 
-  * Arquivos CSV com campos reais de cada provedor
-  * Utilizados como referência e template
+### Backend
 
-* `_native`
+```bash
+cd backend
+npm install
+node server.js
+```
 
-  * Preserva o dado original sem alteração
-  * Fundamental para auditoria e rastreabilidade
+### Frontend
+
+Abrir:
+
+```text
+frontend/index.html
+```
 
 ---
 
-## 🧭 Limitações
+## 📁 Dados de Exemplo
 
-Este projeto é um **MVP orientado a estruturação de dados**.
+O diretório `data/samples/` contém:
+
+* CSVs reais simulados por provedor
+* Estrutura de colunas nativas
+* Base para testes e demonstração
+
+---
+
+## 📚 Documentação Técnica
+
+A documentação completa está em:
+
+```text
+docs/INTEGRATION.md
+```
+
+Inclui:
+
+* contratos de API
+* estrutura de dados
+* exemplos de ingestão
+* regras de mapeamento
+* visão de evolução
+
+---
+
+## ⚠️ Escopo
+
+Este projeto é um **MVP de normalização de dados**.
 
 Não inclui:
 
+* automação de decisão
 * otimização automática de custos
-* análise de performance em tempo real
-* integração direta com APIs de billing
-* observabilidade de infraestrutura
+* integração nativa com APIs em tempo real
+* camada de governança avançada
 
 ---
 
-## 🚀 Evolução
+## 🧭 Evolução Prevista
 
-Próximos passos planejados:
-
-* Integração com APIs reais de pricing
-* Streaming de dados de billing
-* Versionamento de schemas
-* Camada de governança de dados
-* Regras avançadas de arbitragem
+* Integração com APIs reais de billing e pricing
+* Streaming de dados
+* Versionamento de schema
+* Validação e governança de dados
+* Análise contextual de custos
 
 ---
 
 ## 📄 Licença
 
-Distribuído sob licença MIT.
-Veja o arquivo `LICENSE` para mais detalhes.
+MIT
 
 ---
 
 ## 👤 Autor
 
-**Gilberto Gonçalves dos Santos Filho**
+Gilberto Gonçalves dos Santos Filho
 
 Foco em:
 
 * Governança de TI
 * IAM
 * FinOps
-* Estruturação de dados e auditoria
-
----
-
-## 📌 Observação Final (Importante para posicionamento)
-
-Este projeto não implementa tomada de decisão automática nem substitui ferramentas de FinOps ou observabilidade.
-
-Ele atua como uma **camada de normalização e estruturação**, servindo como base para análises, auditoria e integração com sistemas mais complexos.
-
+* Estruturação e normalização de dados
 ---
