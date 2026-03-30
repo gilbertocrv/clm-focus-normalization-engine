@@ -1,176 +1,94 @@
-Multicloud Billing Normalization Tool
+# ☁️ Multicloud Billing Normalizer (CLM + FOCUS)
 
-Sistema para normalização e padronização de dados de faturamento multicloud, com suporte a AWS, GCP, Azure e OCI.
+![License](https://img.shields.io/badge/license-MIT-green)
+![Node.js](https://img.shields.io/badge/node.js-v18+-blue)
+![FinOps](https://img.shields.io/badge/Focus-Aligned-orange)
 
-O objetivo é estruturar dados financeiros provenientes de diferentes provedores em um schema comum auditável, preservando os dados originais e permitindo análise consistente.
+Sistema para normalização e padronização de dados de faturamento multicloud, com suporte nativo para **AWS, GCP, Azure e OCI**.
 
-📌 Problema
+O objetivo deste projeto é estruturar dados financeiros provenientes de diferentes provedores em um **schema comum auditável**, preservando a integridade dos dados originais e permitindo uma análise de eficiência consistente.
 
-Ambientes multicloud expõem dados de billing de formas diferentes:
+---
 
-estruturas de dados distintas
-nomenclaturas inconsistentes
-formatos de data e moeda variados
-ausência de padronização entre provedores
+## 📌 O Problema
+Ambientes multicloud expõem dados de billing de formas heterogêneas:
+* **Estruturas de dados distintas** (JSON aninhado vs CSV flat).
+* **Nomenclaturas inconsistentes** (ex: `line_item_unblended_cost` vs `cost`).
+* **Formatos de data e moeda variados**.
+* **Dificuldade de Auditoria**: Perda de rastreabilidade durante a conversão de dados.
 
-Isso dificulta:
+## 💡 A Solução
+Este projeto implementa uma camada de normalização com foco em **Governança e Auditoria**:
+* **Ingestão via CSV**: Baseada em exportações reais (CUR, BigQuery, Cost Management).
+* **Mapeamento Determinístico**: Tradução via `mapping.json` para um schema comum.
+* **Preservação Total (`_native`)**: O dado original é mantido intacto para fins de reconciliação contábil.
+* **Arbitragem de Custo**: Categorização funcional (Compute, Storage, ML) para comparação de eficiência.
 
-comparação de custos
-auditoria financeira
-análise consolidada
-governança de dados
-💡 Solução
+---
 
-Este projeto implementa uma camada de normalização de dados de billing, com as seguintes características:
+## 🏗️ Arquitetura do Projeto
+* **`backend/`**: API Express para processamento e normalização dos SKUs.
+* **`frontend/`**: Dashboard interativo com KPIs globais e visões por provedor.
+* **`config/`**: Regras de mapeamento e fatores de arbitragem de preço.
+* **`data/samples/`**: Templates de CSV com nomes de campos nativos reais de cada cloud.
+* **`docs/`**: Documentação técnica e guia de integração de queries (Athena/BigQuery).
 
-ingestão de dados via CSV (exemplo baseado em exportações reais)
-mapeamento para um schema comum padronizado
-preservação completa dos dados originais (_native)
-suporte a múltiplos provedores
-separação entre:
-visão normalizada
-visão nativa
-🏗️ Arquitetura
-backend/        → API para processamento e normalização
-frontend/       → Dashboard para visualização e análise
-config/         → Regras de mapeamento e fatores de arbitragem
-data/samples/   → Exemplos de dados por provedor
-docs/           → Documentação e guia de integração
-🔄 Fluxo de dados
-Upload de arquivo CSV (por provedor)
-Identificação do provedor
-Aplicação do mapping (config/mapping.json)
-Normalização para schema comum
-Preservação do dado original em _native
-Aplicação de fatores relativos (config/pricing.json)
-Exibição no frontend
-📊 Schema Comum
+---
 
-Campos principais:
+## 📊 Schema Comum (Normalizado)
+| Campo | Descrição |
+| :--- | :--- |
+| `resource_id` | Identificador único do recurso no provedor |
+| `service_name` | Nome amigável do serviço/produto |
+| `region` | Localização geográfica (Region/Zone) |
+| `billed_cost` | Custo real faturado no período |
+| `_native` | **Objeto com todos os campos originais da fatura bruta** |
 
-resource_id
-service_name
-region
-billed_cost
-usage_type
-tags
-period_start
-period_end
-🔗 Integrações de Dados (Fontes Oficiais)
-AWS
-Cost and Usage Report (CUR)
-Documentação:
-https://docs.aws.amazon.com/cur/latest/userguide/data-dictionary.html
-GCP
-BigQuery Billing Export
-Documentação:
-https://cloud.google.com/billing/docs/how-to/export-data-bigquery-schema
-Azure
-Cost Management Export
-Documentação:
-https://learn.microsoft.com/en-us/azure/cost-management-billing/automate/understand-usage-details-fields
-OCI
-Usage Reports
-Documentação:
-https://docs.oracle.com/en-us/iaas/Content/Billing/Concepts/usagereportsoverview.htm
-⚙️ Configuração
-config/mapping.json
+---
 
-Define o mapeamento entre campos nativos de cada provedor e o schema comum.
+## 🔗 Fontes Oficiais Suportadas
+* **AWS**: Cost and Usage Report (CUR) via S3 + Athena.
+* **GCP**: BigQuery Billing Export.
+* **Azure**: Cost Management Export (CSV).
+* **OCI**: Usage Reports (Object Storage).
 
-Permite adicionar novos provedores apenas incluindo um novo bloco.
+---
 
-config/pricing.json
+## 🚀 Como Executar
 
-Define fatores relativos de custo por categoria:
+1. **Clone o repositório**:
+   ```bash
+   git clone [https://github.com/seu-usuario/multicloud-billing-normalizer.git](https://github.com/seu-usuario/multicloud-billing-normalizer.git)
+   ```
 
-compute
-storage
-database
-networking
-ML
-serverless
-analytics
+2. **Instale e Inicie o Backend**:
+   ```bash
+   cd backend
+   npm install
+   node server.js
+   ```
 
-⚠️ Os valores atuais são fatores relativos (não preços reais).
+3. **Acesse a Interface**:
+   Abra o arquivo `frontend/index.html` ou acesse via `http://localhost:3000`.
 
-🧪 Dados de Exemplo
+---
 
-O diretório data/samples/ contém arquivos CSV simulando:
+## ⚙️ Configuração Customizável
+* **`mapping.json`**: Adicione novos provedores ou altere de/para sem mexer no código.
+* **`pricing.json`**: Ajuste os fatores de arbitragem por categoria (Compute, Storage, Networking, etc).
 
-AWS
-GCP
-Azure
-OCI
+---
 
-Esses arquivos utilizam campos nativos reais de cada provedor, servindo como referência para integração.
+## 🧭 Limites e Evolução
+Este projeto é um **MVP focado em estruturação de dados**. Ele não substitui ferramentas de observabilidade em tempo real, mas serve como a fundação necessária para processos de auditoria e governança multicloud.
 
-🖥️ Backend
+**Próximos passos:** Integração direta com APIs de pricing e suporte a streaming de dados.
 
-API construída com Node.js + Express, com as seguintes rotas:
+---
 
-POST /analyze → análise de um CSV
-POST /analyze-multi → análise multi-provedor
-GET /providers → lista de provedores suportados
-GET /config → retorna configurações
-GET /health → health check
-Características
-preservação de dados originais em _native
-suporte a múltiplos provedores
-processamento desacoplado de UI
-🌐 Frontend
+## 📄 Licença
+Distribuído sob a licença MIT. Veja `LICENSE` para mais informações.
 
-Dashboard com:
-
-upload via drag & drop
-KPIs globais
-visão normalizada
-visão por provedor
-exportação de relatórios em CSV
-📦 Exportação
-
-O sistema permite exportar os dados normalizados em formato CSV para análise externa.
-
-🧭 Limites do Projeto
-
-Este projeto:
-
-não é um framework
-não implementa tomada de decisão automática
-não utiliza dados reais de performance
-não substitui ferramentas de observabilidade
-
-Ele é focado exclusivamente em:
-
-normalização e estruturação de dados de faturamento multicloud
-
-🚀 Possíveis Evoluções
-integração com APIs reais de pricing
-validação de schema automática
-enriquecimento com dados de observabilidade
-suporte a streaming de dados
-versionamento de schemas
-camadas de governança
-🛠️ Tecnologias
-Node.js
-Express
-JavaScript
-HTML/CSS/JS (frontend)
-📌 Observação
-
-Os dados utilizados são provenientes de estruturas reais de exportação de billing dos provedores, mas podem ser simulados para fins de demonstração.
-
-📄 Licença
-
-Este projeto está sob licença MIT.
-
-🔎 Nota final
-
-Este projeto demonstra:
-
-modelagem de dados
-integração multicloud
-normalização de schemas
-preservação de auditabilidade
-
-com foco em engenharia de dados e estruturação de informações financeiras, não em decisão automática ou otimização.
+---
+**Desenvolvido por Gilberto Gonçalves dos Santos Filho**  
+*Focado em IAM, Governança de TI e FinOps.*
