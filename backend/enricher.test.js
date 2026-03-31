@@ -274,3 +274,157 @@ describe('aggregateRiskKPIs', () => {
     expect(kpis.cost_at_risk).toBeGreaterThan(0);
   });
 });
+
+// ─── Novos testes — gaps identificados no code review ─────────
+
+// Gap 1: conflito de sinais — segurança é OR lógico, nunca majority
+describe('calculateRiskScore — conflito de sinais', () => {
+  test('public_exposure=true em qualquer sinal prevalece sobre false nos demais', () => {
+    const signals = [
+      makeSignal({ has_approval: true, public_exposure: true  }),
+      makeSignal({ has_approval: true, public_exposure: false }),
+      makeSignal({ has_approval: true, public_exposure: false }),
+    ];
+    const { reasons } = calculateRiskScore(makeResource(), signals, SECURITY_RULES);
+    expect(reasons).toContain('public_exposure');
+  });
+
+  test('sensitive_data=true em qualquer sinal prevalece', () => {
+    const signals = [
+      makeSignal({ has_approval: true, sensitive_data: false }),
+      makeSignal({ has_approval: true, sensitive_data: true  }),
+    ];
+    const { reasons } = calculateRiskScore(makeResource(), signals, SECURITY_RULES);
+    expect(reasons).toContain('sensitive_data');
+  });
+
+  test('no_approval: basta um sinal com has_approval=true para remover o finding', () => {
+    const signals = [
+      makeSignal({ has_approval: false }),
+      makeSignal({ has_approval: true  }),
+    ];
+    const { reasons } = calculateRiskScore(makeResource(), signals, SECURITY_RULES);
+    expect(reasons).not.toContain('no_approval');
+  });
+});
+
+// Gap 2: confidence no owner
+describe('extractOwner — confidence', () => {
+  test('ação de criação por humano retorna confidence=high', () => {
+    const owner = extractOwner([makeSignal({ action: 'RunInstances', identity_id: 'arn:aws:iam::123:user/joao' })]);
+    expect(owner.confidence).toBe('high');
+  });
+
+  test('ação de criação por role/terraform retorna confidence=medium', () => {
+    const owner = extractOwner([makeSignal({ action: 'RunInstances', identity_id: 'arn:aws:iam::123:role/terraform-role' })]);
+    expect(owner.confidence).toBe('medium');
+  });
+
+  test('sem ação de criação retorna confidence=low', () => {
+    const owner = extractOwner([makeSignal({ action: 'DescribeInstances', identity_id: 'arn:aws:iam::123:user/joao' })]);
+    expect(owner.confidence).toBe('low');
+  });
+
+  test('owner tem campo _note explicando a atribuição', () => {
+    const owner = extractOwner([makeSignal({ action: 'RunInstances' })]);
+    expect(typeof owner._note).toBe('string');
+    expect(owner._note.length).toBeGreaterThan(0);
+  });
+});
+
+// Gap 3: cost_at_risk é proporcional ao score
+describe('buildSecurityContext — cost_at_risk proporcional', () => {
+  test('score 0 → cost_at_risk 0', () => {
+    const ctx = buildSecurityContext(makeResource({ billed_cost: 1000 }), [], SECURITY_RULES);
+    expect(ctx.cost_at_risk).toBe(0);
+  });
+
+  test('score 10 → cost_at_risk = billed_cost integral', () => {
+    // max score: no_approval(3) + public_exposure(3) + sensitive_data(2) + high_cost(2) = 10
+    const resource = makeResource({ billed_cost: 1000 });
+    const signals  = [makeSignal({ has_approval: false, public_exposure: true, sensitive_data: true })];
+    const ctx = buildSecurityContext(resource, signals, SECURITY_RULES);
+    expect(ctx.cost_at_risk).toBe(parseFloat((1000 * ctx.risk_score / 10).toFixed(2)));
+  });
+
+  test('cost_at_risk é sempre <= billed_cost', () => {
+    const resource = makeResource({ billed_cost: 500 });
+    const signals  = [makeSignal({ has_approval: false, public_exposure: true })];
+    const ctx = buildSecurityContext(resource, signals, SECURITY_RULES);
+    expect(ctx.cost_at_risk).toBeLessThanOrEqual(resource.billed_cost);
+  });
+});
+
+// Gap 4: snapshot de versionamento
+describe('buildSecurityContext — _snapshot', () => {
+  test('_snapshot tem evaluated_at, rules_version e signal_ids', () => {
+    const ctx = buildSecurityContext(makeResource(), [makeSignal()], SECURITY_RULES);
+    expect(ctx._snapshot).toBeDefined();
+    expect(ctx._snapshot.evaluated_at).toBeTruthy();
+    expect(ctx._snapshot.rules_version).toBeTruthy();
+    expect(Array.isArray(ctx._snapshot.signal_ids)).toBe(true);
+  });
+
+  test('evaluated_at é um ISO timestamp válido', () => {
+    const ctx = buildSecurityContext(makeResource(), [], SECURITY_RULES);
+    expect(() => new Date(ctx._snapshot.evaluated_at)).not.toThrow();
+    expect(new Date(ctx._snapshot.evaluated_at).toISOString()).toBe(ctx._snapshot.evaluated_at);
+  });
+});
+
+// Gap 5: enrich nunca perde registros
+describe('enrich — integridade', () => {
+  test('enrich nunca perde registros — output.length === input.length', () => {
+    const { normalizeCSV } = require('./normalizer');
+    const MAPPING = JSON.parse(require('fs').readFileSync(
+      require('path').join(__dirname, '../config/mapping.json'), 'utf8'
+    ));
+    const awsCSV      = require('fs').readFileSync(require('path').join(__dirname, '../data/samples/aws_sample.csv'), 'utf8');
+    const { records } = normalizeCSV(awsCSV, 'aws', MAPPING);
+    const signals     = parseSecuritySignals(SIGNAL_CSV, SECURITY_MAPPING);
+    const enriched    = enrich(records, signals, SECURITY_RULES);
+    expect(enriched.length).toBe(records.length);
+  });
+});
+
+// Gap 6: unattributed_cost no aggregateRiskKPIs
+describe('aggregateRiskKPIs — unattributed_cost', () => {
+  test('KPIs incluem unattributed_cost e unattributed_resources', () => {
+    const enriched = enrich([makeResource()], [], SECURITY_RULES);
+    const kpis     = aggregateRiskKPIs(enriched);
+    expect(kpis).toHaveProperty('unattributed_cost');
+    expect(kpis).toHaveProperty('unattributed_resources');
+  });
+
+  test('recurso sem sinais conta como não atribuído', () => {
+    const enriched = enrich([makeResource({ billed_cost: 1000 })], [], SECURITY_RULES);
+    const kpis     = aggregateRiskKPIs(enriched);
+    expect(kpis.unattributed_cost).toBe(1000);
+    expect(kpis.unattributed_resources).toBe(1);
+  });
+
+  test('recurso com owner confidence=high NÃO conta como não atribuído', () => {
+    const signals  = [makeSignal({ action: 'RunInstances', identity_id: 'arn:aws:iam::123:user/joao' })];
+    const enriched = enrich([makeResource({ billed_cost: 1000 })], signals, SECURITY_RULES);
+    const kpis     = aggregateRiskKPIs(enriched);
+    expect(kpis.unattributed_resources).toBe(0);
+  });
+
+  test('top_identities_by_spend está ordenado por custo decrescente', () => {
+    const resources = [
+      makeResource({ resource_id: 'r1', billed_cost: 100 }),
+      makeResource({ resource_id: 'r2', billed_cost: 500 }),
+      makeResource({ resource_id: 'r3', billed_cost: 300 }),
+    ];
+    const signals = [
+      makeSignal({ resource_id: 'r1', has_approval: false, identity_name: 'alice' }),
+      makeSignal({ resource_id: 'r2', has_approval: false, identity_name: 'bob' }),
+      makeSignal({ resource_id: 'r3', has_approval: false, identity_name: 'alice' }),
+    ];
+    const kpis = aggregateRiskKPIs(enrich(resources, signals, SECURITY_RULES));
+    const costs = kpis.top_identities_by_spend.map(i => i.cost_without_approval);
+    for (let i = 1; i < costs.length; i++) {
+      expect(costs[i]).toBeLessThanOrEqual(costs[i - 1]);
+    }
+  });
+});
