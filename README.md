@@ -1,261 +1,157 @@
+# clm-focus-normalization-engine
 
-
-# ☁️ Multicloud Billing Normalization Engine (CLM + FOCUS)
-
-![License](https://img.shields.io/badge/license-MIT-green)
-![Node.js](https://img.shields.io/badge/node.js-v18+-blue)
-![Focus](https://img.shields.io/badge/FOCUS-Aligned-orange)
-
-Sistema de **normalização de dados de faturamento multicloud**, com suporte a **AWS, GCP, Azure e OCI**.
-
-O objetivo é transformar dados financeiros heterogêneos em um **schema comum auditável**, preservando os dados nativos e permitindo análise consistente entre provedores.
-
-> Este projeto é um **MVP de normalização de dados**.
-> Não é um framework, nem um sistema de decisão.
+Engine de normalização de dados de billing multicloud (AWS, GCP, Azure, OCI) com schema auditável derivado das documentações oficiais de cada provedor.
 
 ---
 
-## 📌 Problema
+## O problema
 
-Ambientes multicloud apresentam inconsistências estruturais relevantes:
+AWS, GCP, Azure e OCI expõem estruturas de billing completamente diferentes — nomenclaturas, granularidades e formatos de campo distintos. Sem normalização, qualquer análise comparativa opera sobre dados inconsistentes.
 
-* Estruturas de billing distintas entre provedores
-* Nomenclaturas incompatíveis entre serviços equivalentes
-* Diferenças de granularidade e agregação
-* Formatos divergentes de data, moeda e unidade
-* Perda de rastreabilidade durante transformações
+## O que este projeto faz
 
-Resultado: **análise inconsistente e baixa confiabilidade para governança financeira**.
+Ingere CSV de billing de qualquer provedor suportado, aplica um mapeamento declarativo (`config/mapping.json`) e produz um schema comum. Os dados originais são preservados integralmente no campo `_native` de cada registro — nada é descartado.
+
+Registros rejeitados (custo inválido, `resource_id` ausente) ficam num campo `skipped` separado com o motivo, para auditoria.
 
 ---
 
-## 💡 Proposta
+## Exemplo
 
-Implementar uma camada de normalização determinística com foco em auditabilidade:
+**Input** — CSV nativo AWS (`line_item_resource_id`, `line_item_unblended_cost`, ...):
 
-* **Mapeamento explícito (`config/mapping.json`)**
-* **Schema comum padronizado**
-* **Preservação integral do dado original (`_native`)**
-* **Classificação funcional por categoria**
-* **Base preparada para integração com pricing real**
-
-> O sistema não toma decisão — ele **estrutura o dado para que decisões sejam confiáveis**.
-
----
-
-## 🏗️ Arquitetura
-
-```text
-Fatura nativa (CUR / Billing Export / Cost Export / Usage Report)
-        ↓
-Ingestão CSV
-        ↓
-De/Para (config/mapping.json)
-        ↓
-Schema Normalizado
-        ↓
-Classificação + Arbitragem (config/pricing.json)
-        ↓
-API + Dashboard
+```
+line_item_resource_id,product_product_name,product_region,line_item_unblended_cost
+i-0a1b2c3d4e5f,Amazon EC2,us-east-1,4200.00
 ```
 
-### Estrutura do projeto
+**Output** — schema normalizado:
 
-```text
-backend/        API Express (processamento e normalização)
-frontend/       Dashboard (visualização e exportação)
-config/         Regras de mapeamento e pricing
-data/samples/   CSVs de exemplo por provedor
-docs/           Documentação técnica (INTEGRATION.md)
+```json
+{
+  "resource_id":  "i-0a1b2c3d4e5f",
+  "service_name": "Amazon EC2",
+  "region":       "us-east-1",
+  "billed_cost":  4200.00,
+  "provider":     "aws",
+  "_native": {
+    "line_item_resource_id":      "i-0a1b2c3d4e5f",
+    "product_product_name":       "Amazon EC2",
+    "product_region":             "us-east-1",
+    "line_item_unblended_cost":   "4200.00"
+  },
+  "arbitrage": {
+    "best_cloud":       "oci",
+    "optimized_cost":   3150.00,
+    "savings":          1050.00,
+    "savings_pct":      25.0,
+    "category":         "compute",
+    "migration_needed": true
+  }
+}
 ```
 
 ---
 
-## 🔗 Provedores Suportados e Referências Oficiais
+## Estrutura
 
-A modelagem segue os padrões oficiais de billing de cada cloud:
-
-### ☁️ AWS
-
-* CUR (Cost and Usage Report):
-  [https://docs.aws.amazon.com/cur/latest/userguide/what-is-cur.html](https://docs.aws.amazon.com/cur/latest/userguide/what-is-cur.html)
-* Price List API:
-  [https://docs.aws.amazon.com/awsaccountbilling/latest/aboutv2/price-list-api.html](https://docs.aws.amazon.com/awsaccountbilling/latest/aboutv2/price-list-api.html)
-
-### ☁️ GCP
-
-* Billing Export (BigQuery):
-  [https://cloud.google.com/billing/docs/how-to/export-data-bigquery](https://cloud.google.com/billing/docs/how-to/export-data-bigquery)
-* Billing Catalog API:
-  [https://cloud.google.com/billing/v1/how-tos/catalog-api](https://cloud.google.com/billing/v1/how-tos/catalog-api)
-
-### ☁️ Microsoft Azure
-
-* Cost Management Export:
-  [https://learn.microsoft.com/en-us/azure/cost-management-billing/costs/tutorial-export-acm-data](https://learn.microsoft.com/en-us/azure/cost-management-billing/costs/tutorial-export-acm-data)
-* Retail Prices API:
-  [https://learn.microsoft.com/en-us/rest/api/cost-management/retail-prices](https://learn.microsoft.com/en-us/rest/api/cost-management/retail-prices)
-
-### ☁️ Oracle Cloud (OCI)
-
-* Usage Reports:
-  [https://docs.oracle.com/en-us/iaas/Content/Billing/Concepts/usagereports.htm](https://docs.oracle.com/en-us/iaas/Content/Billing/Concepts/usagereports.htm)
-* Usage API:
-  [https://docs.oracle.com/en-us/iaas/api/#/en/usage/20190111/](https://docs.oracle.com/en-us/iaas/api/#/en/usage/20190111/)
+```
+backend/
+  server.js            API Express (rotas, validação, error handling)
+  normalizer.js        Lógica de normalização — importável e testável em isolamento
+  normalizer.test.js   33 testes (Jest)
+config/
+  mapping.json         De/para entre campos nativos e schema comum
+  pricing.json         Fatores de arbitragem por categoria de serviço
+data/samples/
+  aws_sample.csv       CSV de exemplo com campos nativos reais AWS
+  gcp_sample.csv       CSV de exemplo GCP
+  azure_sample.csv     CSV de exemplo Azure
+  oci_sample.csv       CSV de exemplo OCI
+frontend/
+  index.html           Dashboard com abas por provedor
+docs/
+  INTEGRATION.md       Documentação de API, mapeamentos e instruções de ingestão
+```
 
 ---
 
-## 📊 Schema Normalizado
-
-| Campo          | Descrição                             |
-| -------------- | ------------------------------------- |
-| `resource_id`  | Identificador único do recurso        |
-| `service_name` | Nome do serviço                       |
-| `region`       | Região                                |
-| `billed_cost`  | Custo faturado                        |
-| `provider`     | Provedor de origem                    |
-| `_native`      | Dados originais completos (imutáveis) |
-
----
-
-## ⚙️ Configuração
-
-### `config/mapping.json`
-
-Define o de/para entre campos nativos e o schema comum.
-
-* Extensível por provedor
-* Permite adicionar novos providers sem alterar código
-
----
-
-### `config/pricing.json`
-
-Define fatores de arbitragem por categoria.
-
-> ⚠️ Os fatores atuais são simulados
-> Não devem ser utilizados para decisão real
-> Estrutura preparada para integração com APIs oficiais
-
----
-
-## 🚀 Execução
+## Como rodar
 
 ```bash
 git clone https://github.com/gilbertocrv/clm-focus-normalization-engine.git
-cd clm-focus-normalization-engine
-```
-
-### Backend
-
-```bash
-cd backend
+cd clm-focus-normalization-engine/backend
 npm install
 node server.js
 ```
 
-Servidor:
+Acesse `http://localhost:3000`. O backend serve o frontend automaticamente.
 
-```
-http://localhost:3000
-```
-
-### Frontend
-
-Abrir no navegador:
-
-```
-frontend/index.html
+**Testes:**
+```bash
+npm test
 ```
 
 ---
 
-## 📁 Dados de Exemplo
+## Provedores suportados
 
-O diretório `data/samples/` contém:
-
-* CSVs simulando exportações reais de cada cloud
-* Estrutura de colunas nativas
-* Base para testes e demonstração
+| Provedor | Fonte de billing | Documentação |
+|----------|-----------------|--------------|
+| AWS      | Cost and Usage Report (CUR) via S3 + Athena | [docs.aws.amazon.com/cur](https://docs.aws.amazon.com/cur/latest/userguide/what-is-cur.html) |
+| GCP      | BigQuery Billing Export | [cloud.google.com/billing/docs](https://cloud.google.com/billing/docs/how-to/export-data-bigquery) |
+| Azure    | Cost Management Export (CSV) | [learn.microsoft.com](https://learn.microsoft.com/en-us/azure/cost-management-billing/costs/tutorial-export-acm-data) |
+| OCI      | Usage Reports (Object Storage) | [docs.oracle.com](https://docs.oracle.com/en-us/iaas/Content/Billing/Concepts/usagereports.htm) |
 
 ---
 
-## 📚 Documentação Técnica
+## Adicionar um novo provedor
 
-Arquivo:
+Edite `config/mapping.json` e adicione um bloco:
 
+```json
+{
+  "meu-provedor": {
+    "_source": "Portal de faturamento interno",
+    "_docs":   "https://meu-provedor.com/billing/docs",
+    "resource_id":  "id_recurso",
+    "service_name": "nome_servico",
+    "region":       "regiao",
+    "billed_cost":  "valor_cobrado"
+  }
+}
 ```
-docs/INTEGRATION.md
+
+Nenhuma alteração de código necessária. O novo provedor é reconhecido automaticamente na próxima requisição.
+
+---
+
+## API
+
+`POST /api/analyze` — normaliza e analisa um CSV
+
+```bash
+curl -X POST http://localhost:3000/api/analyze \
+  -F "provider=aws" \
+  -F "file=@data/samples/aws_sample.csv"
 ```
 
-Inclui:
+`POST /api/analyze/multi` — múltiplos provedores em paralelo
 
-* Endpoints da API
-* Contratos de entrada/saída
-* Queries de extração (Athena / BigQuery / Azure / OCI)
-* Estrutura de mapeamento
-* Diretrizes de expansão
+`GET /api/providers` — lista provedores suportados
 
----
+`GET /api/config/mapping` — retorna o mapeamento ativo
 
-## ⚠️ Escopo
-
-Este projeto:
-
-✔ Normaliza dados
-✔ Preserva rastreabilidade
-✔ Permite comparação consistente
-
-Este projeto **não**:
-
-✘ Toma decisão automática
-✘ Substitui ferramentas FinOps
-✘ Integra pricing em tempo real
-✘ Implementa governança organizacional
+Documentação completa em `docs/INTEGRATION.md`.
 
 ---
 
-## 🧭 Evolução e Limitações
+## Escopo
 
-### Limitações atuais
-
-* Parsing incorreto para formatos numéricos locais (ex: `pt-BR`)
-* Fatores de arbitragem não baseados em pricing real
-* `resource_id` pode ser gerado artificialmente (impacto em auditoria)
-* CORS aberto sem restrição
-* Upload sem limite de tamanho (risco operacional)
-* Configuração carregada apenas no startup
-* Exposição de mensagens de erro internas
-* Ausência de testes automatizados
-* README sem exemplo explícito input → output (pendente evolução)
+Este é um MVP de normalização de dados. Não inclui automação de decisão, integração com APIs de pricing em tempo real, nem camada de governança avançada. O `pricing.json` usa fatores relativos estáticos — adequados para validação de estrutura, não para decisão financeira real.
 
 ---
 
-### Próximos passos
+## Licença
 
-* Integração com APIs reais de pricing
-* Validação de schema e consistência
-* Testes automatizados por provedor
-* Limites e hardening de segurança
-* Versionamento de mapping
-* Pipeline de ingestão contínua
-
----
-
-## 📄 Licença
-
-MIT
-
----
-
-## 👤 Autor
-
-**Gilberto Gonçalves dos Santos Filho**
-
-Foco em:
-
-* Governança de TI
-* IAM
-* FinOps
-* Estruturação e normalização de dados
----
+MIT — Gilberto Gonçalves dos Santos Filho

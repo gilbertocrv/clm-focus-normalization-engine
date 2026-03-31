@@ -1,0 +1,74 @@
+{
+  "_version": "1.0.0",
+  "_description": "De/para entre campos nativos de sinais de segurança e o schema comum de risco",
+  "_schema_comum": {
+    "resource_id":    "Identificador do recurso (chave de join com billing)",
+    "identity_id":    "Identidade que criou/modificou o recurso",
+    "identity_name":  "Nome legível da identidade",
+    "action":         "Ação executada (ex: CreateInstance)",
+    "risk_type":      "Tipo de risco detectado",
+    "severity":       "Severidade: critical | high | medium | low",
+    "has_approval":   "Se o recurso tem tag ou evidência de aprovação",
+    "public_exposure":"Se o recurso está exposto publicamente",
+    "sensitive_data": "Se há indicação de dados sensíveis",
+    "timestamp":      "Quando o sinal foi gerado",
+    "source":         "Ferramenta que gerou o sinal"
+  },
+
+  "aws_cloudtrail": {
+    "_source": "AWS CloudTrail — Management Events export",
+    "_docs": "https://docs.aws.amazon.com/awscloudtrail/latest/userguide/cloudtrail-log-file-examples.html",
+    "resource_id":    "requestParameters.resourceId",
+    "identity_id":    "userIdentity.arn",
+    "identity_name":  "userIdentity.userName",
+    "action":         "eventName",
+    "timestamp":      "eventTime"
+  },
+
+  "aws_securityhub": {
+    "_source": "AWS Security Hub — Findings export (ASFF)",
+    "_docs": "https://docs.aws.amazon.com/securityhub/latest/userguide/securityhub-findings-format.html",
+    "resource_id":    "Resources[0].Id",
+    "risk_type":      "Types[0]",
+    "severity":       "Severity.Label",
+    "public_exposure":"ProductFields.aws/guardduty/service/action/networkConnectionAction/connectionDirection",
+    "timestamp":      "UpdatedAt",
+    "source":         "ProductArn"
+  },
+
+  "gcp_audit": {
+    "_source": "GCP Cloud Audit Logs — BigQuery export",
+    "_docs": "https://cloud.google.com/logging/docs/audit",
+    "resource_id":    "resource.labels.instance_id",
+    "identity_id":    "protoPayload.authenticationInfo.principalEmail",
+    "identity_name":  "protoPayload.authenticationInfo.principalEmail",
+    "action":         "protoPayload.methodName",
+    "timestamp":      "timestamp"
+  },
+
+  "azure_activity": {
+    "_source": "Azure Activity Logs — Export via Log Analytics",
+    "_docs": "https://learn.microsoft.com/en-us/azure/azure-monitor/essentials/activity-log",
+    "resource_id":    "resourceId",
+    "identity_id":    "caller",
+    "identity_name":  "callerDisplayName",
+    "action":         "operationName",
+    "timestamp":      "eventTimestamp"
+  },
+
+  "generic": {
+    "_source": "CSV genérico de sinais de segurança (qualquer provedor)",
+    "_docs":   "Campos esperados documentados em data/samples/security_signals.csv",
+    "resource_id":    "resource_id",
+    "identity_id":    "identity_id",
+    "identity_name":  "identity_name",
+    "action":         "action",
+    "risk_type":      "risk_type",
+    "severity":       "severity",
+    "has_approval":   "has_approval",
+    "public_exposure":"public_exposure",
+    "sensitive_data": "sensitive_data",
+    "timestamp":      "timestamp",
+    "source":         "source"
+  }
+}
