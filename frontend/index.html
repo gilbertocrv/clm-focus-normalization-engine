@@ -1,0 +1,500 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CLM + FOCUS — Governança Multicloud</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=Syne:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg:      #07090f; --surface: #0d1117; --surface2: #131a24; --surface3: #1a2232;
+      --border:  rgba(255,255,255,0.06); --border2: rgba(255,255,255,0.12);
+      --text:    #dce6f0; --muted: #4a5e72; --muted2: #6a8099;
+      --accent:  #38bdf8; --green: #34d399; --yellow: #fbbf24; --red: #f87171; --orange: #fb923c;
+      --aws:     #ff9900; --gcp: #4285f4; --azure: #0078d4; --oci: #f80000;
+      --mono:    'IBM Plex Mono', monospace; --display: 'Syne', sans-serif;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background: var(--bg); color: var(--text); font-family: var(--display); min-height: 100vh; font-size: 14px; }
+
+    /* TOPBAR */
+    .topbar { display:flex; align-items:center; justify-content:space-between; padding:0 32px; height:56px; border-bottom:1px solid var(--border); background:var(--surface); position:sticky; top:0; z-index:100; }
+    .topbar-brand { display:flex; align-items:center; gap:10px; }
+    .topbar-logo { width:28px; height:28px; background:var(--accent); border-radius:6px; display:flex; align-items:center; justify-content:center; }
+    .topbar-logo svg { width:16px; height:16px; }
+    .topbar-name { font-weight:700; font-size:15px; letter-spacing:-0.3px; }
+    .topbar-version { font-family:var(--mono); font-size:10px; color:var(--muted2); background:var(--surface2); padding:2px 7px; border-radius:4px; border:1px solid var(--border); }
+    .topbar-actions { display:flex; gap:8px; }
+    .btn { font-family:var(--display); font-size:12px; font-weight:600; padding:7px 14px; border-radius:7px; border:none; cursor:pointer; transition:all 0.15s; }
+    .btn-ghost { background:var(--surface2); border:1px solid var(--border); color:var(--muted2); }
+    .btn-ghost:hover { color:var(--text); border-color:var(--border2); }
+    .btn-primary { background:var(--accent); color:#000; font-weight:700; }
+    .btn-primary:hover { filter:brightness(1.1); }
+    .btn-risk { background:rgba(248,113,113,0.12); border:1px solid rgba(248,113,113,0.3); color:var(--red); }
+    .btn-risk:hover { background:rgba(248,113,113,0.2); }
+    .btn-sm { padding:5px 10px; font-size:11px; }
+    .main { padding:28px 32px; max-width:1600px; margin:0 auto; }
+
+    /* UPLOAD */
+    .upload-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin-bottom:16px; }
+    .upload-card { background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:16px; transition:border-color 0.2s; }
+    .upload-card.loaded { border-color:rgba(52,211,153,0.3); }
+    .upload-card-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:12px; }
+    .provider-badge { font-family:var(--mono); font-size:11px; font-weight:600; padding:3px 8px; border-radius:5px; letter-spacing:0.05em; }
+    .badge-aws { background:rgba(255,153,0,0.12); color:var(--aws); border:1px solid rgba(255,153,0,0.25); }
+    .badge-gcp { background:rgba(66,133,244,0.12); color:var(--gcp); border:1px solid rgba(66,133,244,0.25); }
+    .badge-azure { background:rgba(0,120,212,0.12); color:var(--azure); border:1px solid rgba(0,120,212,0.25); }
+    .badge-oci { background:rgba(248,0,0,0.1); color:var(--oci); border:1px solid rgba(248,0,0,0.2); }
+    .upload-status { font-size:11px; color:var(--muted); font-family:var(--mono); }
+    .upload-status.ok { color:var(--green); }
+    .upload-dropzone { border:1.5px dashed rgba(255,255,255,0.1); border-radius:8px; padding:14px; text-align:center; cursor:pointer; transition:all 0.2s; font-size:12px; color:var(--muted); }
+    .upload-dropzone:hover, .upload-dropzone.over { border-color:var(--accent); color:var(--accent); background:rgba(56,189,248,0.04); }
+    .upload-source { font-size:10px; color:var(--muted); font-family:var(--mono); margin-top:8px; line-height:1.5; }
+
+    /* SECURITY UPLOAD */
+    .security-upload { background:var(--surface); border:1px solid rgba(248,113,113,0.15); border-radius:12px; padding:16px; margin-bottom:28px; }
+    .security-upload-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:12px; }
+    .security-label { font-size:12px; font-weight:600; color:var(--red); font-family:var(--mono); display:flex; align-items:center; gap:6px; }
+    .security-label::before { content:''; width:8px; height:8px; border-radius:50%; background:var(--red); animation:pulse 2s infinite; }
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
+    .security-dropzone { border:1.5px dashed rgba(248,113,113,0.2); border-radius:8px; padding:12px; text-align:center; cursor:pointer; font-size:12px; color:var(--muted); transition:all 0.2s; }
+    .security-dropzone:hover { border-color:var(--red); color:var(--red); background:rgba(248,113,113,0.04); }
+
+    /* KPI BARS */
+    .kpi-bar { display:grid; grid-template-columns:repeat(5,1fr); gap:12px; margin-bottom:16px; }
+    .kpi-bar-risk { display:grid; grid-template-columns:repeat(5,1fr); gap:12px; margin-bottom:28px; }
+    .kpi { background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:16px 18px; }
+    .kpi.risk { border-color:rgba(248,113,113,0.2); background:rgba(248,113,113,0.04); }
+    .kpi-label { font-size:10px; text-transform:uppercase; letter-spacing:0.1em; color:var(--muted); font-family:var(--mono); margin-bottom:8px; }
+    .kpi-val { font-family:var(--mono); font-size:20px; font-weight:600; }
+    .kpi-val.green { color:var(--green); } .kpi-val.yellow { color:var(--yellow); }
+    .kpi-val.accent { color:var(--accent); } .kpi-val.red { color:var(--red); } .kpi-val.orange { color:var(--orange); }
+    .kpi-sub { font-size:10px; color:var(--muted); margin-top:4px; }
+    .kpi-divider { grid-column:1/-1; border:none; border-top:1px solid var(--border); margin:4px 0; }
+
+    /* TABS */
+    .tabs-wrap { background:var(--surface); border:1px solid var(--border); border-radius:14px; overflow:hidden; }
+    .tabs-nav { display:flex; border-bottom:1px solid var(--border); overflow-x:auto; scrollbar-width:none; }
+    .tabs-nav::-webkit-scrollbar { display:none; }
+    .tab-btn { font-family:var(--display); font-size:12px; font-weight:600; padding:13px 20px; border:none; background:none; color:var(--muted); cursor:pointer; white-space:nowrap; border-bottom:2px solid transparent; transition:all 0.15s; display:flex; align-items:center; gap:7px; }
+    .tab-btn:hover { color:var(--text); }
+    .tab-btn.active { color:var(--accent); border-bottom-color:var(--accent); }
+    .tab-btn.tab-risk.active { color:var(--red); border-bottom-color:var(--red); }
+    .tab-count { font-family:var(--mono); font-size:10px; padding:1px 5px; background:var(--surface2); border-radius:4px; color:var(--muted2); }
+    .tab-panel { display:none; } .tab-panel.active { display:block; }
+
+    /* TABLE */
+    .table-toolbar { display:flex; align-items:center; justify-content:space-between; padding:14px 20px; border-bottom:1px solid var(--border); }
+    .table-info { font-size:12px; color:var(--muted); font-family:var(--mono); }
+    .table-scroll { overflow-x:auto; }
+    table { width:100%; border-collapse:collapse; font-size:12px; }
+    thead tr { border-bottom:1px solid var(--border); }
+    th { padding:10px 14px; text-align:left; font-size:10px; text-transform:uppercase; letter-spacing:0.08em; color:var(--muted); font-family:var(--mono); font-weight:400; white-space:nowrap; }
+    tbody tr { border-bottom:1px solid rgba(255,255,255,0.025); transition:background 0.1s; }
+    tbody tr:hover { background:rgba(255,255,255,0.025); }
+    tbody tr:last-child { border-bottom:none; }
+    td { padding:11px 14px; vertical-align:middle; }
+    .mono-sm { font-family:var(--mono); font-size:11px; color:var(--muted2); }
+    .mono-val { font-family:var(--mono); font-size:12px; }
+    .cloud-chip { display:inline-flex; align-items:center; gap:4px; font-family:var(--mono); font-size:10px; font-weight:600; text-transform:uppercase; padding:2px 8px; border-radius:20px; }
+    .chip-aws { background:rgba(255,153,0,0.1); border:1px solid rgba(255,153,0,0.2); color:var(--aws); }
+    .chip-gcp { background:rgba(66,133,244,0.1); border:1px solid rgba(66,133,244,0.2); color:var(--gcp); }
+    .chip-azure { background:rgba(0,120,212,0.1); border:1px solid rgba(0,120,212,0.2); color:var(--azure); }
+    .chip-oci { background:rgba(248,0,0,0.08); border:1px solid rgba(248,0,0,0.15); color:#ff6060; }
+    .saving-positive { color:var(--green); font-family:var(--mono); }
+    .bar-wrap { display:flex; align-items:center; gap:8px; }
+    .bar-bg { flex:1; height:3px; background:rgba(255,255,255,0.06); border-radius:2px; min-width:50px; }
+    .bar-fill { height:100%; border-radius:2px; background:var(--green); }
+    .bar-pct { font-family:var(--mono); font-size:10px; color:var(--muted); }
+
+    /* RISK BADGES */
+    .risk-badge { display:inline-flex; align-items:center; gap:4px; font-family:var(--mono); font-size:10px; font-weight:600; padding:2px 8px; border-radius:20px; text-transform:uppercase; }
+    .risk-high   { background:rgba(248,113,113,0.12); border:1px solid rgba(248,113,113,0.3); color:var(--red); }
+    .risk-medium { background:rgba(251,191,36,0.12); border:1px solid rgba(251,191,36,0.3); color:var(--yellow); }
+    .risk-low    { background:rgba(52,211,153,0.12); border:1px solid rgba(52,211,153,0.3); color:var(--green); }
+    .risk-none   { background:rgba(74,94,114,0.12); border:1px solid rgba(74,94,114,0.3); color:var(--muted); }
+    .finding-tag { display:inline-block; font-family:var(--mono); font-size:10px; padding:1px 6px; border-radius:4px; background:var(--surface2); border:1px solid var(--border); color:var(--muted2); margin:1px; }
+
+    /* EMPTY/LOADING */
+    .empty { padding:60px 24px; text-align:center; color:var(--muted); }
+    .empty-title { font-size:14px; font-weight:600; margin-bottom:8px; color:var(--muted2); }
+    .empty-sub { font-size:11px; font-family:var(--mono); }
+    .spinner-wrap { padding:48px; text-align:center; }
+    .spinner { width:28px; height:28px; border:2px solid var(--border); border-top-color:var(--accent); border-radius:50%; animation:spin 0.7s linear infinite; margin:0 auto 14px; }
+    @keyframes spin { to { transform:rotate(360deg); } }
+    .spinner-label { font-size:11px; color:var(--muted); font-family:var(--mono); }
+
+    @media (max-width:900px) {
+      .main { padding:16px; }
+      .upload-grid, .kpi-bar, .kpi-bar-risk { grid-template-columns:1fr 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-brand">
+    <div class="topbar-logo">
+      <svg viewBox="0 0 16 16" fill="none"><rect x="2" y="2" width="5" height="5" rx="1" fill="#000"/><rect x="9" y="2" width="5" height="5" rx="1" fill="#000"/><rect x="2" y="9" width="5" height="5" rx="1" fill="#000"/><rect x="9" y="9" width="5" height="5" rx="1" fill="#000" opacity=".4"/></svg>
+    </div>
+    <span class="topbar-name">CLM + FOCUS</span>
+    <span class="topbar-version">v2.0 · Security Context</span>
+  </div>
+  <div class="topbar-actions">
+    <button class="btn btn-ghost btn-sm" onclick="loadAllSamples()">▶ Carregar demos</button>
+    <button class="btn btn-risk btn-sm" onclick="loadWithSecurity()">⚠ Demo + Segurança</button>
+    <button class="btn btn-primary btn-sm" onclick="exportReport()">↓ Exportar CSV</button>
+  </div>
+</div>
+
+<div class="main">
+
+  <!-- UPLOAD BILLING -->
+  <div class="upload-grid">
+    <div class="upload-card" id="card-aws">
+      <div class="upload-card-header"><span class="provider-badge badge-aws">AWS</span><span class="upload-status" id="status-aws">aguardando</span></div>
+      <div class="upload-dropzone" id="drop-aws" onclick="triggerFile('aws')">Arraste o CUR CSV ou clique<input type="file" id="file-aws" accept=".csv" style="display:none" onchange="handleFile('aws',this.files[0])"></div>
+      <div class="upload-source">Fonte: Cost and Usage Report<br>S3 + Athena export</div>
+    </div>
+    <div class="upload-card" id="card-gcp">
+      <div class="upload-card-header"><span class="provider-badge badge-gcp">GCP</span><span class="upload-status" id="status-gcp">aguardando</span></div>
+      <div class="upload-dropzone" id="drop-gcp" onclick="triggerFile('gcp')">Arraste o Billing Export CSV ou clique<input type="file" id="file-gcp" accept=".csv" style="display:none" onchange="handleFile('gcp',this.files[0])"></div>
+      <div class="upload-source">Fonte: BigQuery Billing Export<br>service.description, cost</div>
+    </div>
+    <div class="upload-card" id="card-azure">
+      <div class="upload-card-header"><span class="provider-badge badge-azure">Azure</span><span class="upload-status" id="status-azure">aguardando</span></div>
+      <div class="upload-dropzone" id="drop-azure" onclick="triggerFile('azure')">Arraste o Cost Management CSV ou clique<input type="file" id="file-azure" accept=".csv" style="display:none" onchange="handleFile('azure',this.files[0])"></div>
+      <div class="upload-source">Fonte: Cost Management Export<br>MeterCategory, CostInBillingCurrency</div>
+    </div>
+    <div class="upload-card" id="card-oci">
+      <div class="upload-card-header"><span class="provider-badge badge-oci">OCI</span><span class="upload-status" id="status-oci">aguardando</span></div>
+      <div class="upload-dropzone" id="drop-oci" onclick="triggerFile('oci')">Arraste o Usage Report CSV ou clique<input type="file" id="file-oci" accept=".csv" style="display:none" onchange="handleFile('oci',this.files[0])"></div>
+      <div class="upload-source">Fonte: OCI Usage Reports<br>resourceId, service, cost</div>
+    </div>
+  </div>
+
+  <!-- UPLOAD SECURITY -->
+  <div class="security-upload">
+    <div class="security-upload-header">
+      <span class="security-label">Sinais de segurança (opcional)</span>
+      <span class="upload-status" id="status-security">aguardando</span>
+    </div>
+    <div class="security-dropzone" id="drop-security" onclick="document.getElementById('file-security').click()">
+      Arraste o CSV de sinais de segurança ou clique — habilita correlação Identidade → Recurso → Custo → Risco
+      <input type="file" id="file-security" accept=".csv" style="display:none" onchange="handleSecurityFile(this.files[0])">
+    </div>
+  </div>
+
+  <!-- KPIs FINANCEIROS -->
+  <div class="kpi-bar">
+    <div class="kpi"><div class="kpi-label">Total exposto</div><div class="kpi-val accent" id="kpi-total">—</div><div class="kpi-sub">todos os provedores</div></div>
+    <div class="kpi"><div class="kpi-label">Recursos</div><div class="kpi-val" id="kpi-resources">—</div><div class="kpi-sub">itens analisados</div></div>
+    <div class="kpi"><div class="kpi-label">Economia potencial</div><div class="kpi-val green" id="kpi-savings">—</div><div class="kpi-sub">via arbitragem</div></div>
+    <div class="kpi"><div class="kpi-label">% redução</div><div class="kpi-val yellow" id="kpi-pct">—</div><div class="kpi-sub">do custo atual</div></div>
+    <div class="kpi"><div class="kpi-label">Migrações sugeridas</div><div class="kpi-val" id="kpi-migrations">—</div><div class="kpi-sub">mudanças de provedor</div></div>
+  </div>
+
+  <!-- KPIs DE RISCO (só aparecem com sinais de segurança) -->
+  <div class="kpi-bar-risk" id="risk-kpi-section" style="display:none">
+    <div class="kpi risk"><div class="kpi-label">Custo em risco</div><div class="kpi-val red" id="kpi-cost-at-risk">—</div><div class="kpi-sub">exposição financeira</div></div>
+    <div class="kpi risk"><div class="kpi-label">% custo exposto</div><div class="kpi-val orange" id="kpi-risk-pct">—</div><div class="kpi-sub">do total</div></div>
+    <div class="kpi risk"><div class="kpi-label">Recursos críticos</div><div class="kpi-val red" id="kpi-high-risk">—</div><div class="kpi-sub">risco alto</div></div>
+    <div class="kpi risk"><div class="kpi-label">Custo sem aprovação</div><div class="kpi-val orange" id="kpi-no-approval">—</div><div class="kpi-sub">Shadow IT potencial</div></div>
+    <div class="kpi risk"><div class="kpi-label">Custo exposto publicamente</div><div class="kpi-val red" id="kpi-exposed">—</div><div class="kpi-sub">acesso público</div></div>
+  </div>
+
+  <!-- TABS -->
+  <div class="tabs-wrap">
+    <div class="tabs-nav">
+      <button class="tab-btn active" onclick="switchTab('overview')">Visão geral <span class="tab-count" id="count-overview">0</span></button>
+      <button class="tab-btn tab-risk" id="tab-risk-btn" onclick="switchTab('risk')" style="display:none">Risco &amp; Identidade <span class="tab-count" id="count-risk">0</span></button>
+      <button class="tab-btn" onclick="switchTab('aws')"><span style="color:var(--aws)">■</span> AWS <span class="tab-count" id="count-aws">0</span></button>
+      <button class="tab-btn" onclick="switchTab('gcp')"><span style="color:var(--gcp)">■</span> GCP <span class="tab-count" id="count-gcp">0</span></button>
+      <button class="tab-btn" onclick="switchTab('azure')"><span style="color:var(--azure)">■</span> Azure <span class="tab-count" id="count-azure">0</span></button>
+      <button class="tab-btn" onclick="switchTab('oci')"><span style="color:var(--oci)">■</span> OCI <span class="tab-count" id="count-oci">0</span></button>
+    </div>
+
+    <!-- OVERVIEW -->
+    <div class="tab-panel active" id="panel-overview">
+      <div class="table-toolbar"><span class="table-info" id="info-overview">Carregue pelo menos um provedor</span></div>
+      <div class="table-scroll">
+        <table><thead><tr>
+          <th>Resource ID</th><th>Serviço</th><th>Região</th><th>Provedor</th>
+          <th>Custo atual</th><th>Melhor cloud</th><th>Custo otimizado</th><th>Economia</th><th>Redução</th>
+        </tr></thead><tbody id="tbody-overview"></tbody></table>
+      </div>
+      <div class="empty" id="empty-overview"><div class="empty-title">Nenhum dado carregado</div><div class="empty-sub">Importe CSVs ou clique em "Carregar demos"</div></div>
+    </div>
+
+    <!-- RISK & IDENTITY -->
+    <div class="tab-panel" id="panel-risk">
+      <div class="table-toolbar">
+        <span class="table-info" id="info-risk">Correlação: Identidade → Recurso → Custo → Risco</span>
+      </div>
+      <div class="table-scroll">
+        <table><thead><tr>
+          <th>Resource ID</th><th>Serviço</th><th>Provedor</th><th>Custo</th>
+          <th>Risco</th><th>Score</th><th>Custo em risco</th><th>Owner</th><th>Findings</th>
+        </tr></thead><tbody id="tbody-risk"></tbody></table>
+      </div>
+      <div class="empty" id="empty-risk"><div class="empty-title">Nenhum dado de segurança carregado</div><div class="empty-sub">Carregue um CSV de sinais de segurança para ver a correlação</div></div>
+    </div>
+
+    <!-- PROVIDER TABS -->
+    <div class="tab-panel" id="panel-aws"><div id="native-aws"></div></div>
+    <div class="tab-panel" id="panel-gcp"><div id="native-gcp"></div></div>
+    <div class="tab-panel" id="panel-azure"><div id="native-azure"></div></div>
+    <div class="tab-panel" id="panel-oci"><div id="native-oci"></div></div>
+  </div>
+</div>
+
+<script>
+const API_BASE = 'http://localhost:3000';
+const state = { aws:null, gcp:null, azure:null, oci:null, security:null, enriched:null };
+
+const fmt = n => 'R$ ' + (+n).toLocaleString('pt-BR', { minimumFractionDigits:2, maximumFractionDigits:2 });
+
+// Drag & drop setup
+['aws','gcp','azure','oci'].forEach(p => {
+  const el = document.getElementById('drop-'+p);
+  el.addEventListener('dragover',  e => { e.preventDefault(); el.classList.add('over'); });
+  el.addEventListener('dragleave', () => el.classList.remove('over'));
+  el.addEventListener('drop', e => { e.preventDefault(); el.classList.remove('over'); handleFile(p, e.dataTransfer.files[0]); });
+});
+const secDrop = document.getElementById('drop-security');
+secDrop.addEventListener('dragover',  e => { e.preventDefault(); secDrop.classList.add('over'); });
+secDrop.addEventListener('dragleave', () => secDrop.classList.remove('over'));
+secDrop.addEventListener('drop', e => { e.preventDefault(); secDrop.classList.remove('over'); handleSecurityFile(e.dataTransfer.files[0]); });
+
+function triggerFile(p) { document.getElementById('file-'+p).click(); }
+function setStatus(id, msg, ok) { const el = document.getElementById(id); el.textContent=msg; el.className='upload-status'+(ok?' ok':''); }
+
+// Upload billing CSV
+async function handleFile(provider, file) {
+  if (!file) return;
+  setStatus('status-'+provider, 'carregando…', false);
+  const fd = new FormData();
+  fd.append('file', file); fd.append('provider', provider);
+  try {
+    const res  = await fetch(`${API_BASE}/api/analyze`, { method:'POST', body:fd });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error);
+    state[provider] = data;
+    setStatus('status-'+provider, `${data.summary.total_records} registros`, true);
+    document.getElementById('card-'+provider).classList.add('loaded');
+    if (state.security) await runEnrichment(provider);
+    else refreshAll();
+  } catch (err) { setStatus('status-'+provider, 'erro: '+err.message, false); }
+}
+
+// Upload security CSV — não envia ao backend ainda, aguarda trigger
+async function handleSecurityFile(file) {
+  if (!file) return;
+  state.security = file;
+  setStatus('status-security', file.name+' carregado', true);
+  // Re-enriquece se já há dados de billing
+  const hasData = Object.values(state).some((v,i) => i < 4 && v !== null);
+  if (hasData) await runAllEnrichments();
+}
+
+// Enriquece um provedor específico com os sinais de segurança
+async function runEnrichment(provider) {
+  if (!state[provider] || !state.security) return;
+  const billingCSV = await getBillingCSV(provider);
+  if (!billingCSV) return;
+  const fd = new FormData();
+  fd.append('billing_file', new Blob([billingCSV], {type:'text/csv'}), 'billing.csv');
+  fd.append('security_file', state.security);
+  fd.append('provider', provider);
+  try {
+    const res  = await fetch(`${API_BASE}/api/enrich`, { method:'POST', body:fd });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error);
+    state[provider] = data;
+  } catch (err) { console.warn('enrich failed for '+provider, err); }
+  refreshAll();
+}
+
+async function runAllEnrichments() {
+  const providers = ['aws','gcp','azure','oci'].filter(p => state[p]);
+  for (const p of providers) await runEnrichment(p);
+}
+
+// Recupera CSV original para re-envio ao /api/enrich
+// Como não guardamos o texto, buscamos do servidor (samples) ou do arquivo original
+async function getBillingCSV(provider) {
+  try {
+    return await fetch(`${API_BASE}/samples/${provider}_sample.csv`).then(r => r.ok ? r.text() : null);
+  } catch { return null; }
+}
+
+// Demo sem segurança
+async function loadAllSamples() {
+  for (const p of ['aws','gcp','azure','oci']) {
+    setStatus('status-'+p, 'carregando…', false);
+    try {
+      const csv = await fetch(`${API_BASE}/samples/${p}_sample.csv`).then(r => r.text());
+      const fd  = new FormData(); fd.append('csv', csv); fd.append('provider', p);
+      const res  = await fetch(`${API_BASE}/api/analyze`, { method:'POST', body:fd });
+      const data = await res.json();
+      state[p] = data;
+      setStatus('status-'+p, `${data.summary.total_records} reg.`, true);
+      document.getElementById('card-'+p).classList.add('loaded');
+    } catch (err) { setStatus('status-'+p, 'indisponível', false); }
+  }
+  refreshAll();
+}
+
+// Demo COM segurança
+async function loadWithSecurity() {
+  await loadAllSamples();
+  setStatus('status-security', 'carregando sinais…', false);
+  try {
+    for (const p of ['aws','gcp','azure','oci']) {
+      const billingCSV  = await fetch(`${API_BASE}/samples/${p}_sample.csv`).then(r => r.text());
+      const securityCSV = await fetch(`${API_BASE}/samples/security_signals.csv`).then(r => r.text());
+      const fd = new FormData();
+      fd.append('billing_file',  new Blob([billingCSV],  {type:'text/csv'}), 'billing.csv');
+      fd.append('security_file', new Blob([securityCSV], {type:'text/csv'}), 'security.csv');
+      fd.append('provider', p);
+      const res  = await fetch(`${API_BASE}/api/enrich`, { method:'POST', body:fd });
+      const data = await res.json();
+      if (res.ok) state[p] = data;
+    }
+    setStatus('status-security', 'sinais correlacionados', true);
+  } catch (err) { setStatus('status-security', 'erro: '+err.message, false); }
+  refreshAll();
+}
+
+// Refresh geral
+function refreshAll() {
+  const all = ['aws','gcp','azure','oci'].flatMap(p => state[p]?.records || []);
+  if (!all.length) return;
+
+  const totalCost    = all.reduce((s,r) => s+r.billed_cost, 0);
+  const totalSavings = all.reduce((s,r) => s+r.arbitrage.savings, 0);
+  document.getElementById('kpi-total').textContent       = fmt(totalCost);
+  document.getElementById('kpi-resources').textContent   = all.length;
+  document.getElementById('kpi-savings').textContent     = fmt(totalSavings);
+  document.getElementById('kpi-pct').textContent         = (totalSavings/totalCost*100).toFixed(1)+'%';
+  document.getElementById('kpi-migrations').textContent  = all.filter(r=>r.arbitrage.migration_needed).length;
+  document.getElementById('count-overview').textContent  = all.length;
+
+  renderOverview(all);
+
+  // KPIs de risco
+  const hasRisk = all.some(r => r.security_context);
+  if (hasRisk) {
+    const costAtRisk   = all.reduce((s,r) => s+(r.security_context?.cost_at_risk||0), 0);
+    const highRisk     = all.filter(r => r.security_context?.risk_level==='high');
+    const noApproval   = all.filter(r => r.security_context?.findings?.includes('no_approval'));
+    const exposed      = all.filter(r => r.security_context?.findings?.includes('public_exposure'));
+
+    document.getElementById('risk-kpi-section').style.display = '';
+    document.getElementById('tab-risk-btn').style.display      = '';
+    document.getElementById('kpi-cost-at-risk').textContent    = fmt(costAtRisk);
+    document.getElementById('kpi-risk-pct').textContent        = (costAtRisk/totalCost*100).toFixed(1)+'%';
+    document.getElementById('kpi-high-risk').textContent       = highRisk.length;
+    document.getElementById('kpi-no-approval').textContent     = fmt(noApproval.reduce((s,r)=>s+r.billed_cost,0));
+    document.getElementById('kpi-exposed').textContent         = fmt(exposed.reduce((s,r)=>s+r.billed_cost,0));
+    document.getElementById('count-risk').textContent          = all.filter(r=>r.security_context?.has_signals).length;
+
+    renderRisk(all);
+  }
+
+  ['aws','gcp','azure','oci'].forEach(p => {
+    if (state[p]) {
+      document.getElementById('count-'+p).textContent = state[p].records.length;
+      renderNative(p, state[p].records);
+    }
+  });
+}
+
+// Tabela overview
+function renderOverview(records) {
+  document.getElementById('empty-overview').style.display  = 'none';
+  document.getElementById('info-overview').textContent     = `${records.length} recursos · schema normalizado`;
+  document.getElementById('tbody-overview').innerHTML = records.map(r => {
+    const arb = r.arbitrage;
+    const pct = arb.savings_pct;
+    const riskBadge = r.security_context?.has_signals
+      ? `<span class="risk-badge risk-${r.security_context.risk_level}">${r.security_context.risk_level}</span>`
+      : '';
+    return `<tr>
+      <td><span class="mono-sm">${r.resource_id.slice(-24)}</span></td>
+      <td><span style="font-size:11px">${r.service_name}</span> ${riskBadge}</td>
+      <td><span class="mono-sm">${r.region}</span></td>
+      <td><span class="cloud-chip chip-${r.provider}">${r.provider}</span></td>
+      <td><span class="mono-val">${fmt(r.billed_cost)}</span></td>
+      <td><span class="cloud-chip chip-${arb.best_cloud}">${arb.best_cloud}</span></td>
+      <td><span class="mono-val">${fmt(arb.optimized_cost)}</span></td>
+      <td><span class="saving-positive">▼ ${fmt(arb.savings)}</span></td>
+      <td><div class="bar-wrap"><div class="bar-bg"><div class="bar-fill" style="width:${Math.min(pct,100)}%"></div></div><span class="bar-pct">${pct.toFixed(0)}%</span></div></td>
+    </tr>`;
+  }).join('');
+}
+
+// Tabela risco & identidade
+function renderRisk(records) {
+  const withSignals = records.filter(r => r.security_context);
+  document.getElementById('empty-risk').style.display = withSignals.length ? 'none' : '';
+  document.getElementById('info-risk').textContent    = `${withSignals.filter(r=>r.security_context.has_signals).length} recursos correlacionados · join por resource_id`;
+  document.getElementById('tbody-risk').innerHTML = withSignals
+    .sort((a,b) => b.security_context.risk_score - a.security_context.risk_score)
+    .map(r => {
+      const sc = r.security_context;
+      const owner = sc.owner?.identity_name || '—';
+      const findings = (sc.findings||[]).map(f => `<span class="finding-tag">${f}</span>`).join('');
+      return `<tr>
+        <td><span class="mono-sm">${r.resource_id.slice(-24)}</span></td>
+        <td><span style="font-size:11px">${r.service_name}</span></td>
+        <td><span class="cloud-chip chip-${r.provider}">${r.provider}</span></td>
+        <td><span class="mono-val">${fmt(r.billed_cost)}</span></td>
+        <td><span class="risk-badge risk-${sc.risk_level}">${sc.risk_level}</span></td>
+        <td><span class="mono-val" style="color:${sc.risk_level==='high'?'var(--red)':sc.risk_level==='medium'?'var(--yellow)':'var(--green)'}">${sc.risk_score}</span></td>
+        <td><span class="mono-val ${sc.cost_at_risk>0?'':''}"">${sc.cost_at_risk>0?fmt(sc.cost_at_risk):'—'}</span></td>
+        <td><span class="mono-sm">${owner}</span></td>
+        <td>${findings||'<span class="mono-sm">—</span>'}</td>
+      </tr>`;
+    }).join('');
+}
+
+// Tabela nativa
+function renderNative(provider, records) {
+  if (!records.length) return;
+  const nativeKeys = Object.keys(records[0]._native);
+  document.getElementById('native-'+provider).innerHTML = `
+    <div class="table-toolbar"><span class="table-info">${records.length} registros · campos nativos ${provider.toUpperCase()} preservados</span></div>
+    <div class="table-scroll"><table>
+      <thead><tr>${nativeKeys.map(k=>`<th>${k}</th>`).join('')}</tr></thead>
+      <tbody>${records.map(r=>`<tr>${nativeKeys.map(k=>`<td><span class="mono-sm">${r._native[k]??'—'}</span></td>`).join('')}</tr>`).join('')}</tbody>
+    </table></div>`;
+}
+
+function switchTab(name) {
+  const tabs = ['overview','risk','aws','gcp','azure','oci'];
+  document.querySelectorAll('.tab-btn').forEach((b,i) => b.classList.toggle('active', tabs[i]===name));
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  document.getElementById('panel-'+name).classList.add('active');
+}
+
+function exportReport() {
+  const all = ['aws','gcp','azure','oci'].flatMap(p => state[p]?.records||[]);
+  if (!all.length) { alert('Nenhum dado carregado.'); return; }
+  const headers = ['resource_id','service_name','region','provider','billed_cost','best_cloud','optimized_cost','savings','savings_pct','risk_level','risk_score','cost_at_risk','owner'];
+  const rows = all.map(r => [
+    r.resource_id, r.service_name, r.region, r.provider, r.billed_cost,
+    r.arbitrage.best_cloud, r.arbitrage.optimized_cost, r.arbitrage.savings, r.arbitrage.savings_pct,
+    r.security_context?.risk_level||'', r.security_context?.risk_score||'',
+    r.security_context?.cost_at_risk||'', r.security_context?.owner?.identity_name||'',
+  ]);
+  const csv = [headers,...rows].map(r=>r.join(',')).join('\n');
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([csv],{type:'text/csv'}));
+  a.download = `clm-focus-report-${new Date().toISOString().slice(0,10)}.csv`;
+  a.click();
+}
+</script>
+</body>
+</html>

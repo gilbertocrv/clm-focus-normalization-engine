@@ -1,0 +1,11 @@
+ResourceId,MeterCategory,ResourceLocation,CostInBillingCurrency,MeterName,Tags,BillingPeriodStartDate,BillingPeriodEndDate
+/subscriptions/abc-123/resourceGroups/prod-rg/providers/Microsoft.Compute/virtualMachines/api-vm-01,Virtual Machines,eastus,5100.00,D8s v3,env:prod|team:backend,03/01/2024,03/31/2024
+/subscriptions/abc-123/resourceGroups/prod-rg/providers/Microsoft.Compute/virtualMachines/worker-vm-01,Virtual Machines,eastus,1900.00,B4ms,env:prod|team:workers,03/01/2024,03/31/2024
+/subscriptions/abc-123/resourceGroups/prod-rg/providers/Microsoft.ContainerService/managedClusters/aks-prod,Azure Kubernetes Service,eastus,3800.00,D4s v3 Cluster,env:prod|team:platform,03/01/2024,03/31/2024
+/subscriptions/abc-123/resourceGroups/prod-rg/providers/Microsoft.DocumentDB/databaseAccounts/cosmos-prod,Azure Cosmos DB,eastus,3200.00,Request Units,env:prod|team:data,03/01/2024,03/31/2024
+/subscriptions/abc-123/resourceGroups/prod-rg/providers/Microsoft.Sql/servers/sql-prod,SQL Database,eastus,2100.00,Managed Instance General Purpose,env:prod|team:data,03/01/2024,03/31/2024
+/subscriptions/abc-123/resourceGroups/prod-rg/providers/Microsoft.Storage/storageAccounts/prodblob01,Storage,eastus,890.00,LRS Data Stored,env:prod|team:media,03/01/2024,03/31/2024
+/subscriptions/abc-123/resourceGroups/prod-rg/providers/Microsoft.Web/sites/payments-func,Azure Functions,eastus,280.00,Execution Time,env:prod|team:payments,03/01/2024,03/31/2024
+/subscriptions/abc-123/resourceGroups/prod-rg/providers/Microsoft.Network/loadBalancers/lb-prod,Load Balancer,eastus,310.00,LB Rules,env:prod|team:platform,03/01/2024,03/31/2024
+/subscriptions/abc-123/resourceGroups/prod-rg/providers/Microsoft.CognitiveServices/accounts/ai-prod,Cognitive Services,eastus,1500.00,S1 Transactions,env:prod|team:ml,03/01/2024,03/31/2024
+/subscriptions/abc-123/resourceGroups/prod-rg/providers/Microsoft.Synapse/workspaces/synapse-analytics,Azure Synapse Analytics,eastus,2400.00,Data Warehouse DWU100c,env:prod|team:analytics,03/01/2024,03/31/2024

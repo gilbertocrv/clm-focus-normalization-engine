@@ -1,0 +1,74 @@
+{
+  "_version": "1.0.0",
+  "_description": "De/para entre campos nativos de cada provedor e o schema comum CLM+FOCUS",
+  "_schema_comum": {
+    "resource_id":   "Identificador único do recurso",
+    "service_name":  "Nome do serviço/produto",
+    "region":        "Região geográfica",
+    "billed_cost":   "Custo faturado no período",
+    "usage_type":    "Tipo de uso (opcional)",
+    "tags":          "Tags do recurso (opcional)",
+    "period_start":  "Início do período de faturamento",
+    "period_end":    "Fim do período de faturamento"
+  },
+
+  "aws": {
+    "_source": "Cost and Usage Report (CUR) via S3 + Athena",
+    "_docs": "https://docs.aws.amazon.com/cur/latest/userguide/data-dictionary.html",
+    "_delimiter": ",",
+    "_date_format": "YYYY-MM-DD HH:mm:ss",
+    "resource_id":  "line_item_resource_id",
+    "service_name": "product_product_name",
+    "region":       "product_region",
+    "billed_cost":  "line_item_unblended_cost",
+    "usage_type":   "line_item_usage_type",
+    "tags":         "resource_tags",
+    "period_start": "bill_billing_period_start_date",
+    "period_end":   "bill_billing_period_end_date"
+  },
+
+  "gcp": {
+    "_source": "BigQuery Billing Export",
+    "_docs": "https://cloud.google.com/billing/docs/how-to/export-data-bigquery-schema",
+    "_delimiter": ",",
+    "_date_format": "YYYY-MM-DDTHH:mm:ssZ",
+    "resource_id":  "resource.name",
+    "service_name": "service.description",
+    "region":       "location.region",
+    "billed_cost":  "cost",
+    "usage_type":   "sku.description",
+    "tags":         "labels",
+    "period_start": "usage_start_time",
+    "period_end":   "usage_end_time"
+  },
+
+  "azure": {
+    "_source": "Cost Management Export (CSV)",
+    "_docs": "https://learn.microsoft.com/en-us/azure/cost-management-billing/automate/understand-usage-details-fields",
+    "_delimiter": ",",
+    "_date_format": "MM/DD/YYYY",
+    "resource_id":  "ResourceId",
+    "service_name": "MeterCategory",
+    "region":       "ResourceLocation",
+    "billed_cost":  "CostInBillingCurrency",
+    "usage_type":   "MeterName",
+    "tags":         "Tags",
+    "period_start": "BillingPeriodStartDate",
+    "period_end":   "BillingPeriodEndDate"
+  },
+
+  "oci": {
+    "_source": "Usage Reports (Object Storage)",
+    "_docs": "https://docs.oracle.com/en-us/iaas/Content/Billing/Concepts/usagereportsoverview.htm",
+    "_delimiter": ",",
+    "_date_format": "YYYY-MM-DDTHH:mm:ssZ",
+    "resource_id":  "resourceId",
+    "service_name": "service",
+    "region":       "region",
+    "billed_cost":  "cost",
+    "usage_type":   "skuName",
+    "tags":         "tags",
+    "period_start": "timeIntervalStart",
+    "period_end":   "timeIntervalEnd"
+  }
+}
