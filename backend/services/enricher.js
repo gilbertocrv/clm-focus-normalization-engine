@@ -92,27 +92,55 @@ function classifyRiskLevel(score, rules) {
 }
 
 // ─── Extrai owner da lista de sinais ─────────────────────────
-// Prioriza sinais com ação de criação para rastrear quem gerou o custo
-const CREATION_ACTIONS = [
+//
+// Retorna "responsável financeiro provável" — não "owner real".
+// Confidence reflete a força da evidência de atribuição.
+//
+// high   → ação explícita de criação por identidade humana
+// medium → ação de criação por role/service-account
+// low    → nenhuma ação de criação encontrada (fallback)
+//
+const CREATION_ACTIONS_DIRECT = [
   'runinstances', 'createdbinstance', 'createcluster', 'createbucket',
-  'launchinstance', 'createinstance', 'write', 'insert', 'create',
+  'launchinstance', 'createinstance', 'createfunction', 'createtable',
+  'compute.instances.insert', 'storage.buckets.create',
+  'microsoft.compute/virtualmachines/write',
+  'microsoft.documentdb/databaseaccounts/write',
 ];
+
+const AUTOMATED_PATTERNS = [
+  'role/', '-role', 'serviceaccount', '-sa', 'terraform',
+  'cloudformation', 'autoscaling', 'pipeline', 'lambda',
+];
+
+function inferConfidence(signal, isCreationAction) {
+  if (!isCreationAction) return 'low';
+  const id = (signal.identity_id || '').toLowerCase();
+  const isAutomated = AUTOMATED_PATTERNS.some(p => id.includes(p));
+  return isAutomated ? 'medium' : 'high';
+}
 
 function extractOwner(signals) {
   if (!signals.length) return null;
 
-  // Tenta encontrar quem criou o recurso (ação de criação)
   const creator = signals.find(s =>
-    CREATION_ACTIONS.some(a => (s.action || '').toLowerCase().includes(a))
+    CREATION_ACTIONS_DIRECT.some(a => (s.action || '').toLowerCase().includes(a))
   );
-  const signal = creator || signals[0];
+  const signal         = creator || signals[0];
+  const isCreation     = !!creator;
+  const confidence     = inferConfidence(signal, isCreation);
 
   return {
-    identity_id:   signal.identity_id   || null,
-    identity_name: signal.identity_name || 'unknown',
-    action:        signal.action        || null,
-    timestamp:     signal.timestamp     || null,
-    source:        signal.source        || null,
+    identity_id:    signal.identity_id    || null,
+    identity_name:  signal.identity_name  || 'unknown',
+    action:         signal.action         || null,
+    timestamp:      signal.timestamp      || null,
+    source:         signal.source         || null,
+    confidence,
+    // Nota semântica: atribuição inferida, não garantida
+    _note: isCreation
+      ? 'atribuído por ação de criação detectada'
+      : 'atribuído por fallback — nenhuma ação de criação encontrada',
   };
 }
 
@@ -122,23 +150,27 @@ function buildSecurityContext(resource, signals, rules) {
   const risk_level = classifyRiskLevel(score, rules);
   const owner      = extractOwner(signals);
 
-  // Custo em risco: custo total do recurso quando risk_score >= threshold
-  const cost_at_risk = score >= rules.thresholds.risk_high
-    ? resource.billed_cost
-    : score >= rules.thresholds.risk_medium
-      ? resource.billed_cost * 0.5
-      : 0;
+  // Custo em risco: proporção do custo atribuída ao risco (score/10)
+  // Definição explícita: custo total * (risk_score / 10)
+  // Score 0 → cost_at_risk 0; Score 10 → cost_at_risk = billed_cost integral
+  const cost_at_risk = parseFloat((resource.billed_cost * (score / 10)).toFixed(2));
 
   return {
     owner,
     findings:       reasons,
     risk_score:     score,
     risk_level,
-    cost_at_risk:   parseFloat(cost_at_risk.toFixed(2)),
+    cost_at_risk,
     signal_count:   signals.length,
     has_signals:    signals.length > 0,
-    // Trilha de decisão: por que este score?
+    // Trilha de decisão auditável: por que este score?
     _why: reasons.map(r => rules._rationale?.[r] || r),
+    // Versionamento: snapshot imutável desta avaliação
+    _snapshot: {
+      evaluated_at:   new Date().toISOString(),
+      rules_version:  rules._version || '1.0.0',
+      signal_ids:     signals.map(s => s.resource_id + ':' + (s.timestamp || '')),
+    },
   };
 }
 
@@ -182,6 +214,14 @@ function aggregateRiskKPIs(enrichedRecords) {
     .slice(0, 5)
     .map(([name, cost]) => ({ identity_name: name, cost_without_approval: parseFloat(cost.toFixed(2)) }));
 
+  // Custo não atribuído: owner ausente ou confidence baixa
+  // "Quanto do meu custo não tem dono?"
+  const unattributed = enrichedRecords.filter(r =>
+    !r.security_context.owner ||
+    r.security_context.owner.confidence === 'low' ||
+    r.security_context.owner.identity_name === 'unknown'
+  );
+
   return {
     total_cost:                   parseFloat(total_cost.toFixed(2)),
     cost_at_risk:                 parseFloat(cost_at_risk.toFixed(2)),
@@ -191,6 +231,8 @@ function aggregateRiskKPIs(enrichedRecords) {
     high_risk_resources:          high_risk.length,
     cost_without_approval:        parseFloat(no_approval.reduce((s, r) => s + r.billed_cost, 0).toFixed(2)),
     cost_publicly_exposed:        parseFloat(exposed.reduce((s, r) => s + r.billed_cost, 0).toFixed(2)),
+    unattributed_cost:            parseFloat(unattributed.reduce((s, r) => s + r.billed_cost, 0).toFixed(2)),
+    unattributed_resources:       unattributed.length,
     resources_without_signals:    enrichedRecords.filter(r => !r.security_context.has_signals).length,
     top_identities_by_spend:      top_identities,
   };

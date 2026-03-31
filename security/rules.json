@@ -1,41 +1,64 @@
 {
-  "_version": "1.0.0",
+  "_version": "1.1.0",
   "_description": "Regras de cálculo de risco. Pesos simples e auditáveis — transparência vence sofisticação.",
   "_nota": "Score máximo possível: 10. Cada peso representa uma dimensão independente de risco.",
-
   "weights": {
-    "no_approval":      3,
-    "public_exposure":  3,
-    "sensitive_data":   2,
-    "high_cost":        2
+    "no_approval": 3,
+    "public_exposure": 3,
+    "sensitive_data": 2,
+    "high_cost": 2
   },
-
   "severity_map": {
     "critical": 10,
-    "high":      7,
-    "medium":    4,
-    "low":       1,
-    "info":      0
+    "high": 7,
+    "medium": 4,
+    "low": 1,
+    "info": 0
   },
-
   "thresholds": {
-    "high_cost":    1000,
-    "risk_high":       7,
-    "risk_medium":     4,
-    "risk_low":        1
+    "high_cost": 1000,
+    "risk_high": 7,
+    "risk_medium": 4,
+    "risk_low": 1
   },
-
   "risk_levels": {
-    "high":   { "min": 7,  "max": 10, "label": "high",   "color": "#f87171" },
-    "medium": { "min": 4,  "max": 6,  "label": "medium",  "color": "#fbbf24" },
-    "low":    { "min": 1,  "max": 3,  "label": "low",     "color": "#34d399" },
-    "none":   { "min": 0,  "max": 0,  "label": "none",    "color": "#4a5e72" }
+    "high": {
+      "min": 7,
+      "max": 10,
+      "label": "high",
+      "color": "#f87171"
+    },
+    "medium": {
+      "min": 4,
+      "max": 6,
+      "label": "medium",
+      "color": "#fbbf24"
+    },
+    "low": {
+      "min": 1,
+      "max": 3,
+      "label": "low",
+      "color": "#34d399"
+    },
+    "none": {
+      "min": 0,
+      "max": 0,
+      "label": "none",
+      "color": "#4a5e72"
+    }
   },
-
   "_rationale": {
-    "no_approval":     "Recurso criado sem evidência de aprovação formal — risco de Shadow IT",
+    "no_approval": "Recurso criado sem evidência de aprovação formal — risco de Shadow IT",
     "public_exposure": "Recurso exposto à internet — risco de exfiltração de dados",
-    "sensitive_data":  "Indicação de dados sensíveis no recurso — risco regulatório",
-    "high_cost":       "Custo acima do threshold — amplifica impacto financeiro do risco"
+    "sensitive_data": "Indicação de dados sensíveis no recurso — risco regulatório",
+    "high_cost": "Custo acima do threshold — amplifica impacto financeiro do risco"
+  },
+  "_changelog": {
+    "1.1.0": "high_cost agora só amplifica risco existente. confidence adicionado ao owner. cost_at_risk proporcional (score/10). unattributed_cost adicionado."
+  },
+  "confidence_levels": {
+    "high": "ação explícita de criação por identidade humana",
+    "medium": "ação de criação por role, service-account ou ferramenta de IaC",
+    "low": "nenhuma ação de criação encontrada — atribuição por fallback"
   }
 }
